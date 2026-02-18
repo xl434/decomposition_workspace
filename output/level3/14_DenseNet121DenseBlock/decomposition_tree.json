@@ -1,0 +1,329 @@
+{
+  "model_name": "14_DenseNet121DenseBlock",
+  "source": "data/kernelbench/level3/14_DenseNet121DenseBlock.py",
+  "description": "DenseNet121 DenseBlock with 6 dense layers, each performing BN+ReLU+Conv+Dropout followed by channel concatenation",
+  "batch_size": 10,
+  "num_layers": 6,
+  "num_input_features": 32,
+  "growth_rate": 32,
+  "height": 224,
+  "width": 224,
+  "input_shape": [10, 32, 224, 224],
+  "output_shape": [10, 224, 224, 224],
+  "levels": {
+    "level_3_model": {
+      "dense_block": {
+        "file": "level_3_model/dense_block.py",
+        "level": "model",
+        "parent": null,
+        "input_shapes": [[10, 32, 224, 224]],
+        "output_shapes": [[10, 224, 224, 224]],
+        "init_inputs": [6, 32, 32],
+        "children": [
+          "dense_layer_0",
+          "dense_layer_1",
+          "dense_layer_2",
+          "dense_layer_3",
+          "dense_layer_4",
+          "dense_layer_5"
+        ]
+      }
+    },
+    "level_2_layer": {
+      "dense_layer_0": {
+        "file": "level_2_layer/dense_layer_0.py",
+        "level": "layer",
+        "parent": "dense_block",
+        "input_shapes": [[10, 32, 224, 224]],
+        "output_shapes": [[10, 64, 224, 224]],
+        "operations": ["BN(32)", "ReLU", "Conv2d(32->32,k=3,p=1)", "Dropout(0.0)", "Cat(32+32=64)"],
+        "children": ["bn_relu_conv_drop_32", "cat_32_32"]
+      },
+      "dense_layer_1": {
+        "file": "level_2_layer/dense_layer_1.py",
+        "level": "layer",
+        "parent": "dense_block",
+        "input_shapes": [[10, 64, 224, 224]],
+        "output_shapes": [[10, 96, 224, 224]],
+        "operations": ["BN(64)", "ReLU", "Conv2d(64->32,k=3,p=1)", "Dropout(0.0)", "Cat(64+32=96)"],
+        "children": ["bn_relu_conv_drop_64", "cat_64_32"]
+      },
+      "dense_layer_2": {
+        "file": "level_2_layer/dense_layer_2.py",
+        "level": "layer",
+        "parent": "dense_block",
+        "input_shapes": [[10, 96, 224, 224]],
+        "output_shapes": [[10, 128, 224, 224]],
+        "operations": ["BN(96)", "ReLU", "Conv2d(96->32,k=3,p=1)", "Dropout(0.0)", "Cat(96+32=128)"],
+        "children": ["bn_relu_conv_drop_96", "cat_96_32"]
+      },
+      "dense_layer_3": {
+        "file": "level_2_layer/dense_layer_3.py",
+        "level": "layer",
+        "parent": "dense_block",
+        "input_shapes": [[10, 128, 224, 224]],
+        "output_shapes": [[10, 160, 224, 224]],
+        "operations": ["BN(128)", "ReLU", "Conv2d(128->32,k=3,p=1)", "Dropout(0.0)", "Cat(128+32=160)"],
+        "children": ["bn_relu_conv_drop_128", "cat_128_32"]
+      },
+      "dense_layer_4": {
+        "file": "level_2_layer/dense_layer_4.py",
+        "level": "layer",
+        "parent": "dense_block",
+        "input_shapes": [[10, 160, 224, 224]],
+        "output_shapes": [[10, 192, 224, 224]],
+        "operations": ["BN(160)", "ReLU", "Conv2d(160->32,k=3,p=1)", "Dropout(0.0)", "Cat(160+32=192)"],
+        "children": ["bn_relu_conv_drop_160", "cat_160_32"]
+      },
+      "dense_layer_5": {
+        "file": "level_2_layer/dense_layer_5.py",
+        "level": "layer",
+        "parent": "dense_block",
+        "input_shapes": [[10, 192, 224, 224]],
+        "output_shapes": [[10, 224, 224, 224]],
+        "operations": ["BN(192)", "ReLU", "Conv2d(192->32,k=3,p=1)", "Dropout(0.0)", "Cat(192+32=224)"],
+        "children": ["bn_relu_conv_drop_192", "cat_192_32"]
+      }
+    },
+    "level_1_fusion": {
+      "bn_relu_conv_drop_32": {
+        "file": "level_1_fusion/bn_relu_conv_drop_32.py",
+        "level": "fusion",
+        "parent": "dense_layer_0",
+        "input_shapes": [[10, 32, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]],
+        "operations": ["BatchNorm2d(32)", "ReLU", "Conv2d(32,32,k=3,p=1)", "Dropout(0.0)"],
+        "children": ["batch_norm2d_32", "relu_32x224x224", "conv2d_32x32_k3p1", "dropout_32x224x224"]
+      },
+      "bn_relu_conv_drop_64": {
+        "file": "level_1_fusion/bn_relu_conv_drop_64.py",
+        "level": "fusion",
+        "parent": "dense_layer_1",
+        "input_shapes": [[10, 64, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]],
+        "operations": ["BatchNorm2d(64)", "ReLU", "Conv2d(64,32,k=3,p=1)", "Dropout(0.0)"],
+        "children": ["batch_norm2d_64", "relu_64x224x224", "conv2d_64x32_k3p1", "dropout_64x224x224"]
+      },
+      "bn_relu_conv_drop_96": {
+        "file": "level_1_fusion/bn_relu_conv_drop_96.py",
+        "level": "fusion",
+        "parent": "dense_layer_2",
+        "input_shapes": [[10, 96, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]],
+        "operations": ["BatchNorm2d(96)", "ReLU", "Conv2d(96,32,k=3,p=1)", "Dropout(0.0)"],
+        "children": ["batch_norm2d_96", "relu_96x224x224", "conv2d_96x32_k3p1"]
+      },
+      "bn_relu_conv_drop_128": {
+        "file": "level_1_fusion/bn_relu_conv_drop_128.py",
+        "level": "fusion",
+        "parent": "dense_layer_3",
+        "input_shapes": [[10, 128, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]],
+        "operations": ["BatchNorm2d(128)", "ReLU", "Conv2d(128,32,k=3,p=1)", "Dropout(0.0)"],
+        "children": ["batch_norm2d_128", "relu_128x224x224", "conv2d_128x32_k3p1"]
+      },
+      "bn_relu_conv_drop_160": {
+        "file": "level_1_fusion/bn_relu_conv_drop_160.py",
+        "level": "fusion",
+        "parent": "dense_layer_4",
+        "input_shapes": [[10, 160, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]],
+        "operations": ["BatchNorm2d(160)", "ReLU", "Conv2d(160,32,k=3,p=1)", "Dropout(0.0)"],
+        "children": ["batch_norm2d_160", "relu_160x224x224", "conv2d_160x32_k3p1"]
+      },
+      "bn_relu_conv_drop_192": {
+        "file": "level_1_fusion/bn_relu_conv_drop_192.py",
+        "level": "fusion",
+        "parent": "dense_layer_5",
+        "input_shapes": [[10, 192, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]],
+        "operations": ["BatchNorm2d(192)", "ReLU", "Conv2d(192,32,k=3,p=1)", "Dropout(0.0)"],
+        "children": ["batch_norm2d_192", "relu_192x224x224", "conv2d_192x32_k3p1"]
+      }
+    },
+    "level_0_kernel": {
+      "batch_norm2d_32": {
+        "file": "level_0_kernel/batch_norm2d_32.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_32",
+        "input_shapes": [[10, 32, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "relu_32x224x224": {
+        "file": "level_0_kernel/relu_32x224x224.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_32",
+        "input_shapes": [[10, 32, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "conv2d_32x32_k3p1": {
+        "file": "level_0_kernel/conv2d_32x32_k3p1.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_32",
+        "input_shapes": [[10, 32, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "dropout_32x224x224": {
+        "file": "level_0_kernel/dropout_32x224x224.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_32",
+        "input_shapes": [[10, 32, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "cat_32_32": {
+        "file": "level_0_kernel/cat_32_32.py",
+        "level": "kernel",
+        "parent": "dense_layer_0",
+        "input_shapes": [[10, 32, 224, 224], [10, 32, 224, 224]],
+        "output_shapes": [[10, 64, 224, 224]]
+      },
+      "batch_norm2d_64": {
+        "file": "level_0_kernel/batch_norm2d_64.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_64",
+        "input_shapes": [[10, 64, 224, 224]],
+        "output_shapes": [[10, 64, 224, 224]]
+      },
+      "relu_64x224x224": {
+        "file": "level_0_kernel/relu_64x224x224.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_64",
+        "input_shapes": [[10, 64, 224, 224]],
+        "output_shapes": [[10, 64, 224, 224]]
+      },
+      "conv2d_64x32_k3p1": {
+        "file": "level_0_kernel/conv2d_64x32_k3p1.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_64",
+        "input_shapes": [[10, 64, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "dropout_64x224x224": {
+        "file": "level_0_kernel/dropout_64x224x224.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_64",
+        "input_shapes": [[10, 32, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "cat_64_32": {
+        "file": "level_0_kernel/cat_64_32.py",
+        "level": "kernel",
+        "parent": "dense_layer_1",
+        "input_shapes": [[10, 64, 224, 224], [10, 32, 224, 224]],
+        "output_shapes": [[10, 96, 224, 224]]
+      },
+      "batch_norm2d_96": {
+        "file": "level_0_kernel/batch_norm2d_96.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_96",
+        "input_shapes": [[10, 96, 224, 224]],
+        "output_shapes": [[10, 96, 224, 224]]
+      },
+      "relu_96x224x224": {
+        "file": "level_0_kernel/relu_96x224x224.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_96",
+        "input_shapes": [[10, 96, 224, 224]],
+        "output_shapes": [[10, 96, 224, 224]]
+      },
+      "conv2d_96x32_k3p1": {
+        "file": "level_0_kernel/conv2d_96x32_k3p1.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_96",
+        "input_shapes": [[10, 96, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "cat_96_32": {
+        "file": "level_0_kernel/cat_96_32.py",
+        "level": "kernel",
+        "parent": "dense_layer_2",
+        "input_shapes": [[10, 96, 224, 224], [10, 32, 224, 224]],
+        "output_shapes": [[10, 128, 224, 224]]
+      },
+      "batch_norm2d_128": {
+        "file": "level_0_kernel/batch_norm2d_128.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_128",
+        "input_shapes": [[10, 128, 224, 224]],
+        "output_shapes": [[10, 128, 224, 224]]
+      },
+      "relu_128x224x224": {
+        "file": "level_0_kernel/relu_128x224x224.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_128",
+        "input_shapes": [[10, 128, 224, 224]],
+        "output_shapes": [[10, 128, 224, 224]]
+      },
+      "conv2d_128x32_k3p1": {
+        "file": "level_0_kernel/conv2d_128x32_k3p1.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_128",
+        "input_shapes": [[10, 128, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "cat_128_32": {
+        "file": "level_0_kernel/cat_128_32.py",
+        "level": "kernel",
+        "parent": "dense_layer_3",
+        "input_shapes": [[10, 128, 224, 224], [10, 32, 224, 224]],
+        "output_shapes": [[10, 160, 224, 224]]
+      },
+      "batch_norm2d_160": {
+        "file": "level_0_kernel/batch_norm2d_160.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_160",
+        "input_shapes": [[10, 160, 224, 224]],
+        "output_shapes": [[10, 160, 224, 224]]
+      },
+      "relu_160x224x224": {
+        "file": "level_0_kernel/relu_160x224x224.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_160",
+        "input_shapes": [[10, 160, 224, 224]],
+        "output_shapes": [[10, 160, 224, 224]]
+      },
+      "conv2d_160x32_k3p1": {
+        "file": "level_0_kernel/conv2d_160x32_k3p1.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_160",
+        "input_shapes": [[10, 160, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "cat_160_32": {
+        "file": "level_0_kernel/cat_160_32.py",
+        "level": "kernel",
+        "parent": "dense_layer_4",
+        "input_shapes": [[10, 160, 224, 224], [10, 32, 224, 224]],
+        "output_shapes": [[10, 192, 224, 224]]
+      },
+      "batch_norm2d_192": {
+        "file": "level_0_kernel/batch_norm2d_192.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_192",
+        "input_shapes": [[10, 192, 224, 224]],
+        "output_shapes": [[10, 192, 224, 224]]
+      },
+      "relu_192x224x224": {
+        "file": "level_0_kernel/relu_192x224x224.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_192",
+        "input_shapes": [[10, 192, 224, 224]],
+        "output_shapes": [[10, 192, 224, 224]]
+      },
+      "conv2d_192x32_k3p1": {
+        "file": "level_0_kernel/conv2d_192x32_k3p1.py",
+        "level": "kernel",
+        "parent": "bn_relu_conv_drop_192",
+        "input_shapes": [[10, 192, 224, 224]],
+        "output_shapes": [[10, 32, 224, 224]]
+      },
+      "cat_192_32": {
+        "file": "level_0_kernel/cat_192_32.py",
+        "level": "kernel",
+        "parent": "dense_layer_5",
+        "input_shapes": [[10, 192, 224, 224], [10, 32, 224, 224]],
+        "output_shapes": [[10, 224, 224, 224]]
+      }
+    }
+  }
+}

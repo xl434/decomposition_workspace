@@ -1,0 +1,308 @@
+{
+  "model_name": "29_SwinMLP",
+  "source": "data/kernelbench/level3/29_SwinMLP.py",
+  "description": "SwinMLP - Swin Transformer with MLP-based spatial mixing instead of attention",
+  "parameters": {
+    "img_size": 224,
+    "patch_size": 4,
+    "in_chans": 3,
+    "num_classes": 1000,
+    "embed_dim": 96,
+    "depths": [2, 2, 6, 2],
+    "num_heads": [3, 6, 12, 24],
+    "window_size": 7,
+    "mlp_ratio": 4.0,
+    "drop_rate": 0.0,
+    "drop_path_rate": 0.1,
+    "batch_size": 10
+  },
+  "tree": {
+    "level_3_model/swin_mlp.py": {
+      "level": 3,
+      "type": "model",
+      "description": "Complete SwinMLP model",
+      "input_shapes": [[10, 3, 224, 224]],
+      "output_shapes": [[10, 1000]],
+      "children": [
+        "level_2_layer/patch_embed.py",
+        "level_2_layer/basic_layer_0.py",
+        "level_2_layer/basic_layer_1.py",
+        "level_2_layer/basic_layer_2.py",
+        "level_2_layer/basic_layer_3.py",
+        "level_2_layer/head.py"
+      ]
+    },
+    "level_2_layer/patch_embed.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "PatchEmbed: Conv2d projection + flatten + transpose + LayerNorm",
+      "input_shapes": [[10, 3, 224, 224]],
+      "output_shapes": [[10, 3136, 96]],
+      "children": [
+        "level_1_fusion/patch_proj_norm.py"
+      ]
+    },
+    "level_2_layer/basic_layer_0.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Stage 0: dim=96, resolution=(56,56), depth=2, heads=3, + PatchMerging",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 784, 192]],
+      "children": [
+        "level_1_fusion/swin_mlp_block_spatial.py",
+        "level_1_fusion/swin_mlp_block_ffn.py",
+        "level_1_fusion/patch_merging.py"
+      ]
+    },
+    "level_2_layer/basic_layer_1.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Stage 1: dim=192, resolution=(28,28), depth=2, heads=6, + PatchMerging",
+      "input_shapes": [[10, 784, 192]],
+      "output_shapes": [[10, 196, 384]],
+      "children": [
+        "level_1_fusion/swin_mlp_block_spatial.py",
+        "level_1_fusion/swin_mlp_block_ffn.py",
+        "level_1_fusion/patch_merging.py"
+      ]
+    },
+    "level_2_layer/basic_layer_2.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Stage 2: dim=384, resolution=(14,14), depth=6, heads=12, + PatchMerging",
+      "input_shapes": [[10, 196, 384]],
+      "output_shapes": [[10, 49, 768]],
+      "children": [
+        "level_1_fusion/swin_mlp_block_spatial.py",
+        "level_1_fusion/swin_mlp_block_ffn.py",
+        "level_1_fusion/patch_merging.py"
+      ]
+    },
+    "level_2_layer/basic_layer_3.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Stage 3: dim=768, resolution=(7,7), depth=2, heads=24, no downsample",
+      "input_shapes": [[10, 49, 768]],
+      "output_shapes": [[10, 49, 768]],
+      "children": [
+        "level_1_fusion/swin_mlp_block_spatial.py",
+        "level_1_fusion/swin_mlp_block_ffn.py"
+      ]
+    },
+    "level_2_layer/head.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Classification head: LayerNorm + AvgPool + Flatten + Linear",
+      "input_shapes": [[10, 49, 768]],
+      "output_shapes": [[10, 1000]],
+      "children": [
+        "level_1_fusion/norm_avgpool_flatten.py",
+        "level_0_kernel/linear_768x1000.py"
+      ]
+    },
+    "level_1_fusion/patch_proj_norm.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Conv2d projection + flatten + transpose + LayerNorm",
+      "input_shapes": [[10, 3, 224, 224]],
+      "output_shapes": [[10, 3136, 96]],
+      "children": [
+        "level_0_kernel/conv2d_3x96_k4s4.py",
+        "level_0_kernel/flatten_transpose.py",
+        "level_0_kernel/layer_norm_96.py"
+      ]
+    },
+    "level_1_fusion/swin_mlp_block_spatial.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Spatial MLP branch: norm1 + window_partition + spatial Conv1d + window_reverse + residual",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 3136, 96]],
+      "children": [
+        "level_0_kernel/layer_norm_96_block.py",
+        "level_0_kernel/window_partition.py",
+        "level_0_kernel/spatial_mlp_conv1d_96.py",
+        "level_0_kernel/window_reverse.py",
+        "level_0_kernel/residual_add.py"
+      ]
+    },
+    "level_1_fusion/swin_mlp_block_ffn.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "FFN branch: norm2 + Mlp(Linear+GELU+Linear) + residual",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 3136, 96]],
+      "children": [
+        "level_0_kernel/layer_norm_96_2.py",
+        "level_0_kernel/linear_96x384.py",
+        "level_0_kernel/gelu.py",
+        "level_0_kernel/linear_384x96.py",
+        "level_0_kernel/residual_add.py"
+      ]
+    },
+    "level_1_fusion/patch_merging.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "PatchMerging: spatial downsample + norm + linear reduction",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 784, 192]],
+      "children": [
+        "level_0_kernel/patch_merging_downsample.py",
+        "level_0_kernel/layer_norm_384.py",
+        "level_0_kernel/linear_384x192.py"
+      ]
+    },
+    "level_1_fusion/norm_avgpool_flatten.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Final norm + global average pooling + flatten",
+      "input_shapes": [[10, 49, 768]],
+      "output_shapes": [[10, 768]],
+      "children": [
+        "level_0_kernel/layer_norm_768.py",
+        "level_0_kernel/adaptive_avg_pool1d.py",
+        "level_0_kernel/flatten.py"
+      ]
+    },
+    "level_0_kernel/conv2d_3x96_k4s4.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "Conv2d(3, 96, kernel_size=4, stride=4) - patch projection",
+      "input_shapes": [[10, 3, 224, 224]],
+      "output_shapes": [[10, 96, 56, 56]]
+    },
+    "level_0_kernel/flatten_transpose.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "flatten(2) + transpose(1,2)",
+      "input_shapes": [[10, 96, 56, 56]],
+      "output_shapes": [[10, 3136, 96]]
+    },
+    "level_0_kernel/layer_norm_96.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "LayerNorm(96) for PatchEmbed",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 3136, 96]]
+    },
+    "level_0_kernel/dropout_0.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "Dropout(0.0) pos_drop",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 3136, 96]]
+    },
+    "level_0_kernel/layer_norm_96_block.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "LayerNorm(96) norm1 in SwinMLPBlock",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 3136, 96]]
+    },
+    "level_0_kernel/window_partition.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "window_partition with window_size=7",
+      "input_shapes": [[10, 56, 56, 96]],
+      "output_shapes": [[640, 7, 7, 96]]
+    },
+    "level_0_kernel/spatial_mlp_conv1d_96.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "Conv1d(147, 147, k=1, groups=3) spatial MLP",
+      "input_shapes": [[640, 147, 32]],
+      "output_shapes": [[640, 147, 32]]
+    },
+    "level_0_kernel/window_reverse.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "window_reverse with window_size=7, H=56, W=56",
+      "input_shapes": [[640, 7, 7, 96]],
+      "output_shapes": [[10, 56, 56, 96]]
+    },
+    "level_0_kernel/residual_add.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "Element-wise residual addition",
+      "input_shapes": [[10, 3136, 96], [10, 3136, 96]],
+      "output_shapes": [[10, 3136, 96]]
+    },
+    "level_0_kernel/layer_norm_96_2.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "LayerNorm(96) norm2 in SwinMLPBlock",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 3136, 96]]
+    },
+    "level_0_kernel/linear_96x384.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "Linear(96, 384) Mlp fc1",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 3136, 384]]
+    },
+    "level_0_kernel/gelu.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "GELU activation",
+      "input_shapes": [[10, 3136, 384]],
+      "output_shapes": [[10, 3136, 384]]
+    },
+    "level_0_kernel/linear_384x96.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "Linear(384, 96) Mlp fc2",
+      "input_shapes": [[10, 3136, 384]],
+      "output_shapes": [[10, 3136, 96]]
+    },
+    "level_0_kernel/patch_merging_downsample.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "PatchMerging reshape + interleaved sample + concatenate",
+      "input_shapes": [[10, 3136, 96]],
+      "output_shapes": [[10, 784, 384]]
+    },
+    "level_0_kernel/layer_norm_384.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "LayerNorm(384) in PatchMerging",
+      "input_shapes": [[10, 784, 384]],
+      "output_shapes": [[10, 784, 384]]
+    },
+    "level_0_kernel/linear_384x192.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "Linear(384, 192, bias=False) PatchMerging reduction",
+      "input_shapes": [[10, 784, 384]],
+      "output_shapes": [[10, 784, 192]]
+    },
+    "level_0_kernel/layer_norm_768.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "LayerNorm(768) final norm",
+      "input_shapes": [[10, 49, 768]],
+      "output_shapes": [[10, 49, 768]]
+    },
+    "level_0_kernel/adaptive_avg_pool1d.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "transpose + AdaptiveAvgPool1d(1)",
+      "input_shapes": [[10, 49, 768]],
+      "output_shapes": [[10, 768, 1]]
+    },
+    "level_0_kernel/flatten.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "torch.flatten(x, 1)",
+      "input_shapes": [[10, 768, 1]],
+      "output_shapes": [[10, 768]]
+    },
+    "level_0_kernel/linear_768x1000.py": {
+      "level": 0,
+      "type": "kernel",
+      "description": "Linear(768, 1000) classification head",
+      "input_shapes": [[10, 768]],
+      "output_shapes": [[10, 1000]]
+    }
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "model_name": "2_ShallowWideMLP",
+  "source": "data/kernelbench/level3/2_ShallowWideMLP.py",
+  "description": "Shallow wide MLP with 2 hidden layers of size 32768, input/output size 16384, using ReLU activation",
+  "batch_size": 128,
+  "input_shape": [128, 16384],
+  "output_shape": [128, 16384],
+  "levels": {
+    "level_3_model": {
+      "description": "Complete model",
+      "components": [
+        {
+          "name": "ShallowWideMLP",
+          "file": "level_3_model/shallow_wide_mlp.py",
+          "operations": ["Linear(16384,32768)", "ReLU", "Linear(32768,32768)", "ReLU", "Linear(32768,16384)"],
+          "input_shapes": [[128, 16384]],
+          "output_shapes": [[128, 16384]],
+          "children": ["HiddenBlock0", "HiddenBlock1", "OutputLayer"]
+        }
+      ]
+    },
+    "level_2_layer": {
+      "description": "Layer-level blocks",
+      "components": [
+        {
+          "name": "HiddenBlock0",
+          "file": "level_2_layer/hidden_block_0.py",
+          "operations": ["Linear(16384,32768)", "ReLU"],
+          "input_shapes": [[128, 16384]],
+          "output_shapes": [[128, 32768]],
+          "parent": "ShallowWideMLP",
+          "children": ["LinearReLU_16384x32768"]
+        },
+        {
+          "name": "HiddenBlock1",
+          "file": "level_2_layer/hidden_block_1.py",
+          "operations": ["Linear(32768,32768)", "ReLU"],
+          "input_shapes": [[128, 32768]],
+          "output_shapes": [[128, 32768]],
+          "parent": "ShallowWideMLP",
+          "children": ["LinearReLU_32768x32768"]
+        },
+        {
+          "name": "OutputLayer",
+          "file": "level_2_layer/output_layer.py",
+          "operations": ["Linear(32768,16384)"],
+          "input_shapes": [[128, 32768]],
+          "output_shapes": [[128, 16384]],
+          "parent": "ShallowWideMLP",
+          "children": ["Linear_32768x16384"]
+        }
+      ]
+    },
+    "level_1_fusion": {
+      "description": "Fused operation patterns (Linear+ReLU)",
+      "components": [
+        {
+          "name": "LinearReLU_16384x32768",
+          "file": "level_1_fusion/linear_relu_16384x32768.py",
+          "operations": ["Linear(16384,32768)", "ReLU"],
+          "input_shapes": [[128, 16384]],
+          "output_shapes": [[128, 32768]],
+          "parent": "HiddenBlock0",
+          "children": ["Linear_16384x32768", "ReLU_32768"]
+        },
+        {
+          "name": "LinearReLU_32768x32768",
+          "file": "level_1_fusion/linear_relu_32768x32768.py",
+          "operations": ["Linear(32768,32768)", "ReLU"],
+          "input_shapes": [[128, 32768]],
+          "output_shapes": [[128, 32768]],
+          "parent": "HiddenBlock1",
+          "children": ["Linear_32768x32768", "ReLU_32768"]
+        }
+      ]
+    },
+    "level_0_kernel": {
+      "description": "Individual atomic operations",
+      "components": [
+        {
+          "name": "Linear_16384x32768",
+          "file": "level_0_kernel/linear_16384x32768.py",
+          "operations": ["Linear(16384,32768)"],
+          "input_shapes": [[128, 16384]],
+          "output_shapes": [[128, 32768]],
+          "parent": "LinearReLU_16384x32768",
+          "children": []
+        },
+        {
+          "name": "ReLU_32768",
+          "file": "level_0_kernel/relu_32768.py",
+          "operations": ["ReLU"],
+          "input_shapes": [[128, 32768]],
+          "output_shapes": [[128, 32768]],
+          "parent": "LinearReLU_16384x32768",
+          "children": []
+        },
+        {
+          "name": "Linear_32768x32768",
+          "file": "level_0_kernel/linear_32768x32768.py",
+          "operations": ["Linear(32768,32768)"],
+          "input_shapes": [[128, 32768]],
+          "output_shapes": [[128, 32768]],
+          "parent": "LinearReLU_32768x32768",
+          "children": []
+        },
+        {
+          "name": "Linear_32768x16384",
+          "file": "level_0_kernel/linear_32768x16384.py",
+          "operations": ["Linear(32768,16384)"],
+          "input_shapes": [[128, 32768]],
+          "output_shapes": [[128, 16384]],
+          "parent": "OutputLayer",
+          "children": []
+        }
+      ]
+    }
+  },
+  "data_flow": [
+    {"from": "input", "to": "Linear_16384x32768", "shape": [128, 16384]},
+    {"from": "Linear_16384x32768", "to": "ReLU_32768", "shape": [128, 32768]},
+    {"from": "ReLU_32768", "to": "Linear_32768x32768", "shape": [128, 32768]},
+    {"from": "Linear_32768x32768", "to": "ReLU_32768", "shape": [128, 32768]},
+    {"from": "ReLU_32768", "to": "Linear_32768x16384", "shape": [128, 32768]},
+    {"from": "Linear_32768x16384", "to": "output", "shape": [128, 16384]}
+  ]
+}

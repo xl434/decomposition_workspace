@@ -1,0 +1,213 @@
+{
+  "model_name": "4_LeNet5",
+  "source": "data/kernelbench/level3/4_LeNet5.py",
+  "batch_size": 4096,
+  "num_classes": 20,
+  "input_shape": [4096, 1, 32, 32],
+  "output_shape": [4096, 20],
+  "levels": {
+    "level_3_model": {
+      "lenet5": {
+        "file": "level_3_model/lenet5.py",
+        "abstraction": "model",
+        "parent": null,
+        "children": ["conv_block_1", "conv_block_2", "classifier"],
+        "operations": ["Conv2d", "ReLU", "MaxPool2d", "Conv2d", "ReLU", "MaxPool2d", "Flatten", "Linear", "ReLU", "Linear", "ReLU", "Linear"],
+        "input_shapes": [[4096, 1, 32, 32]],
+        "output_shapes": [[4096, 20]]
+      }
+    },
+    "level_2_layer": {
+      "conv_block_1": {
+        "file": "level_2_layer/conv_block_1.py",
+        "abstraction": "layer",
+        "parent": "lenet5",
+        "children": ["conv_relu_pool_1x6x5"],
+        "operations": ["Conv2d(1,6,5)", "ReLU", "MaxPool2d(2,2)"],
+        "input_shapes": [[4096, 1, 32, 32]],
+        "output_shapes": [[4096, 6, 14, 14]]
+      },
+      "conv_block_2": {
+        "file": "level_2_layer/conv_block_2.py",
+        "abstraction": "layer",
+        "parent": "lenet5",
+        "children": ["conv_relu_pool_6x16x5"],
+        "operations": ["Conv2d(6,16,5)", "ReLU", "MaxPool2d(2,2)"],
+        "input_shapes": [[4096, 6, 14, 14]],
+        "output_shapes": [[4096, 16, 5, 5]]
+      },
+      "classifier": {
+        "file": "level_2_layer/classifier.py",
+        "abstraction": "layer",
+        "parent": "lenet5",
+        "children": ["flatten_16x5x5", "linear_relu_400x120", "linear_relu_120x84", "linear_84x20"],
+        "operations": ["Flatten", "Linear(400,120)", "ReLU", "Linear(120,84)", "ReLU", "Linear(84,20)"],
+        "input_shapes": [[4096, 16, 5, 5]],
+        "output_shapes": [[4096, 20]]
+      }
+    },
+    "level_1_fusion": {
+      "conv_relu_pool_1x6x5": {
+        "file": "level_1_fusion/conv_relu_pool_1x6x5.py",
+        "abstraction": "fusion",
+        "parent": "conv_block_1",
+        "children": ["conv2d_1x6x5", "relu_6x28x28", "max_pool2d_6x28x28"],
+        "operations": ["Conv2d(1,6,5)", "ReLU", "MaxPool2d(2,2)"],
+        "input_shapes": [[4096, 1, 32, 32]],
+        "output_shapes": [[4096, 6, 14, 14]]
+      },
+      "conv_relu_pool_6x16x5": {
+        "file": "level_1_fusion/conv_relu_pool_6x16x5.py",
+        "abstraction": "fusion",
+        "parent": "conv_block_2",
+        "children": ["conv2d_6x16x5", "relu_16x10x10", "max_pool2d_16x10x10"],
+        "operations": ["Conv2d(6,16,5)", "ReLU", "MaxPool2d(2,2)"],
+        "input_shapes": [[4096, 6, 14, 14]],
+        "output_shapes": [[4096, 16, 5, 5]]
+      },
+      "linear_relu_400x120": {
+        "file": "level_1_fusion/linear_relu_400x120.py",
+        "abstraction": "fusion",
+        "parent": "classifier",
+        "children": ["linear_400x120", "relu_120"],
+        "operations": ["Linear(400,120)", "ReLU"],
+        "input_shapes": [[4096, 400]],
+        "output_shapes": [[4096, 120]]
+      },
+      "linear_relu_120x84": {
+        "file": "level_1_fusion/linear_relu_120x84.py",
+        "abstraction": "fusion",
+        "parent": "classifier",
+        "children": ["linear_120x84", "relu_84"],
+        "operations": ["Linear(120,84)", "ReLU"],
+        "input_shapes": [[4096, 120]],
+        "output_shapes": [[4096, 84]]
+      }
+    },
+    "level_0_kernel": {
+      "conv2d_1x6x5": {
+        "file": "level_0_kernel/conv2d_1x6x5.py",
+        "abstraction": "kernel",
+        "parent": "conv_relu_pool_1x6x5",
+        "children": [],
+        "operations": ["Conv2d(1,6,5)"],
+        "input_shapes": [[4096, 1, 32, 32]],
+        "output_shapes": [[4096, 6, 28, 28]]
+      },
+      "relu_6x28x28": {
+        "file": "level_0_kernel/relu_6x28x28.py",
+        "abstraction": "kernel",
+        "parent": "conv_relu_pool_1x6x5",
+        "children": [],
+        "operations": ["ReLU"],
+        "input_shapes": [[4096, 6, 28, 28]],
+        "output_shapes": [[4096, 6, 28, 28]]
+      },
+      "max_pool2d_6x28x28": {
+        "file": "level_0_kernel/max_pool2d_6x28x28.py",
+        "abstraction": "kernel",
+        "parent": "conv_relu_pool_1x6x5",
+        "children": [],
+        "operations": ["MaxPool2d(2,2)"],
+        "input_shapes": [[4096, 6, 28, 28]],
+        "output_shapes": [[4096, 6, 14, 14]]
+      },
+      "conv2d_6x16x5": {
+        "file": "level_0_kernel/conv2d_6x16x5.py",
+        "abstraction": "kernel",
+        "parent": "conv_relu_pool_6x16x5",
+        "children": [],
+        "operations": ["Conv2d(6,16,5)"],
+        "input_shapes": [[4096, 6, 14, 14]],
+        "output_shapes": [[4096, 16, 10, 10]]
+      },
+      "relu_16x10x10": {
+        "file": "level_0_kernel/relu_16x10x10.py",
+        "abstraction": "kernel",
+        "parent": "conv_relu_pool_6x16x5",
+        "children": [],
+        "operations": ["ReLU"],
+        "input_shapes": [[4096, 16, 10, 10]],
+        "output_shapes": [[4096, 16, 10, 10]]
+      },
+      "max_pool2d_16x10x10": {
+        "file": "level_0_kernel/max_pool2d_16x10x10.py",
+        "abstraction": "kernel",
+        "parent": "conv_relu_pool_6x16x5",
+        "children": [],
+        "operations": ["MaxPool2d(2,2)"],
+        "input_shapes": [[4096, 16, 10, 10]],
+        "output_shapes": [[4096, 16, 5, 5]]
+      },
+      "flatten_16x5x5": {
+        "file": "level_0_kernel/flatten_16x5x5.py",
+        "abstraction": "kernel",
+        "parent": "classifier",
+        "children": [],
+        "operations": ["Flatten"],
+        "input_shapes": [[4096, 16, 5, 5]],
+        "output_shapes": [[4096, 400]]
+      },
+      "linear_400x120": {
+        "file": "level_0_kernel/linear_400x120.py",
+        "abstraction": "kernel",
+        "parent": "linear_relu_400x120",
+        "children": [],
+        "operations": ["Linear(400,120)"],
+        "input_shapes": [[4096, 400]],
+        "output_shapes": [[4096, 120]]
+      },
+      "relu_120": {
+        "file": "level_0_kernel/relu_120.py",
+        "abstraction": "kernel",
+        "parent": "linear_relu_400x120",
+        "children": [],
+        "operations": ["ReLU"],
+        "input_shapes": [[4096, 120]],
+        "output_shapes": [[4096, 120]]
+      },
+      "linear_120x84": {
+        "file": "level_0_kernel/linear_120x84.py",
+        "abstraction": "kernel",
+        "parent": "linear_relu_120x84",
+        "children": [],
+        "operations": ["Linear(120,84)"],
+        "input_shapes": [[4096, 120]],
+        "output_shapes": [[4096, 84]]
+      },
+      "relu_84": {
+        "file": "level_0_kernel/relu_84.py",
+        "abstraction": "kernel",
+        "parent": "linear_relu_120x84",
+        "children": [],
+        "operations": ["ReLU"],
+        "input_shapes": [[4096, 84]],
+        "output_shapes": [[4096, 84]]
+      },
+      "linear_84x20": {
+        "file": "level_0_kernel/linear_84x20.py",
+        "abstraction": "kernel",
+        "parent": "classifier",
+        "children": [],
+        "operations": ["Linear(84,20)"],
+        "input_shapes": [[4096, 84]],
+        "output_shapes": [[4096, 20]]
+      }
+    }
+  },
+  "data_flow": [
+    {"from": "input", "to": "conv2d_1x6x5", "shape": [4096, 1, 32, 32]},
+    {"from": "conv2d_1x6x5", "to": "relu_6x28x28", "shape": [4096, 6, 28, 28]},
+    {"from": "relu_6x28x28", "to": "max_pool2d_6x28x28", "shape": [4096, 6, 28, 28]},
+    {"from": "max_pool2d_6x28x28", "to": "conv2d_6x16x5", "shape": [4096, 6, 14, 14]},
+    {"from": "conv2d_6x16x5", "to": "relu_16x10x10", "shape": [4096, 16, 10, 10]},
+    {"from": "relu_16x10x10", "to": "max_pool2d_16x10x10", "shape": [4096, 16, 10, 10]},
+    {"from": "max_pool2d_16x10x10", "to": "flatten_16x5x5", "shape": [4096, 16, 5, 5]},
+    {"from": "flatten_16x5x5", "to": "linear_400x120", "shape": [4096, 400]},
+    {"from": "linear_400x120", "to": "relu_120", "shape": [4096, 120]},
+    {"from": "relu_120", "to": "linear_120x84", "shape": [4096, 120]},
+    {"from": "linear_120x84", "to": "relu_84", "shape": [4096, 84]},
+    {"from": "relu_84", "to": "linear_84x20", "shape": [4096, 84]},
+    {"from": "linear_84x20", "to": "output", "shape": [4096, 20]}
+  ]
+}

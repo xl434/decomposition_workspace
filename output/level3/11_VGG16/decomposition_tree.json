@@ -1,0 +1,365 @@
+{
+  "model_name": "11_VGG16",
+  "source": "data/kernelbench/level3/11_VGG16.py",
+  "tree": {
+    "level_3_model/vgg16.py": {
+      "level": 3,
+      "type": "model",
+      "description": "VGG16 with 5 conv blocks + classifier",
+      "input_shapes": [[10, 3, 224, 224]],
+      "output_shapes": [[10, 1000]],
+      "children": [
+        "level_2_layer/features_block_1.py",
+        "level_2_layer/features_block_2.py",
+        "level_2_layer/features_block_3.py",
+        "level_2_layer/features_block_4.py",
+        "level_2_layer/features_block_5.py",
+        "level_2_layer/classifier.py"
+      ]
+    },
+    "level_2_layer/features_block_1.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Block 1: 2 conv+relu + maxpool",
+      "input_shapes": [[10, 3, 224, 224]],
+      "output_shapes": [[10, 64, 112, 112]],
+      "children": [
+        "level_1_fusion/conv_relu_3x64.py",
+        "level_1_fusion/conv_relu_64x64.py",
+        "level_0_kernel/maxpool2d_64x224x224.py"
+      ]
+    },
+    "level_2_layer/features_block_2.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Block 2: 2 conv+relu + maxpool",
+      "input_shapes": [[10, 64, 112, 112]],
+      "output_shapes": [[10, 128, 56, 56]],
+      "children": [
+        "level_1_fusion/conv_relu_64x128.py",
+        "level_1_fusion/conv_relu_128x128.py",
+        "level_0_kernel/maxpool2d_128x112x112.py"
+      ]
+    },
+    "level_2_layer/features_block_3.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Block 3: 3 conv+relu + maxpool",
+      "input_shapes": [[10, 128, 56, 56]],
+      "output_shapes": [[10, 256, 28, 28]],
+      "children": [
+        "level_1_fusion/conv_relu_128x256.py",
+        "level_1_fusion/conv_relu_256x256.py",
+        "level_1_fusion/conv_relu_256x256.py",
+        "level_0_kernel/maxpool2d_256x56x56.py"
+      ]
+    },
+    "level_2_layer/features_block_4.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Block 4: 3 conv+relu + maxpool",
+      "input_shapes": [[10, 256, 28, 28]],
+      "output_shapes": [[10, 512, 14, 14]],
+      "children": [
+        "level_1_fusion/conv_relu_256x512.py",
+        "level_1_fusion/conv_relu_512x512.py",
+        "level_1_fusion/conv_relu_512x512.py",
+        "level_0_kernel/maxpool2d_512x28x28.py"
+      ]
+    },
+    "level_2_layer/features_block_5.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Block 5: 3 conv+relu + maxpool",
+      "input_shapes": [[10, 512, 14, 14]],
+      "output_shapes": [[10, 512, 7, 7]],
+      "children": [
+        "level_1_fusion/conv_relu_512x512.py",
+        "level_1_fusion/conv_relu_512x512.py",
+        "level_1_fusion/conv_relu_512x512.py",
+        "level_0_kernel/maxpool2d_512x14x14.py"
+      ]
+    },
+    "level_2_layer/classifier.py": {
+      "level": 2,
+      "type": "layer",
+      "description": "Classifier with flatten: Linear+ReLU+Dropout x2 + Linear",
+      "input_shapes": [[10, 512, 7, 7]],
+      "output_shapes": [[10, 1000]],
+      "children": [
+        "level_0_kernel/flatten_512x7x7.py",
+        "level_1_fusion/linear_relu_dropout_25088x4096.py",
+        "level_1_fusion/linear_relu_dropout_4096x4096.py",
+        "level_0_kernel/linear_4096x1000.py"
+      ]
+    },
+    "level_1_fusion/conv_relu_3x64.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Conv2d(3,64,3,p=1) + ReLU",
+      "input_shapes": [[10, 3, 224, 224]],
+      "output_shapes": [[10, 64, 224, 224]],
+      "children": [
+        "level_0_kernel/conv2d_3x64_k3p1.py",
+        "level_0_kernel/relu_64x224x224.py"
+      ]
+    },
+    "level_1_fusion/conv_relu_64x64.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Conv2d(64,64,3,p=1) + ReLU",
+      "input_shapes": [[10, 64, 224, 224]],
+      "output_shapes": [[10, 64, 224, 224]],
+      "children": [
+        "level_0_kernel/conv2d_64x64_k3p1.py",
+        "level_0_kernel/relu_64x224x224_2.py"
+      ]
+    },
+    "level_1_fusion/conv_relu_64x128.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Conv2d(64,128,3,p=1) + ReLU",
+      "input_shapes": [[10, 64, 112, 112]],
+      "output_shapes": [[10, 128, 112, 112]],
+      "children": [
+        "level_0_kernel/conv2d_64x128_k3p1.py",
+        "level_0_kernel/relu_128x112x112.py"
+      ]
+    },
+    "level_1_fusion/conv_relu_128x128.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Conv2d(128,128,3,p=1) + ReLU",
+      "input_shapes": [[10, 128, 112, 112]],
+      "output_shapes": [[10, 128, 112, 112]],
+      "children": [
+        "level_0_kernel/conv2d_128x128_k3p1.py",
+        "level_0_kernel/relu_128x112x112_2.py"
+      ]
+    },
+    "level_1_fusion/conv_relu_128x256.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Conv2d(128,256,3,p=1) + ReLU",
+      "input_shapes": [[10, 128, 56, 56]],
+      "output_shapes": [[10, 256, 56, 56]],
+      "children": [
+        "level_0_kernel/conv2d_128x256_k3p1.py",
+        "level_0_kernel/relu_256x56x56.py"
+      ]
+    },
+    "level_1_fusion/conv_relu_256x256.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Conv2d(256,256,3,p=1) + ReLU",
+      "input_shapes": [[10, 256, 56, 56]],
+      "output_shapes": [[10, 256, 56, 56]],
+      "children": [
+        "level_0_kernel/conv2d_256x256_k3p1.py",
+        "level_0_kernel/relu_256x56x56_2.py"
+      ]
+    },
+    "level_1_fusion/conv_relu_256x512.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Conv2d(256,512,3,p=1) + ReLU",
+      "input_shapes": [[10, 256, 28, 28]],
+      "output_shapes": [[10, 512, 28, 28]],
+      "children": [
+        "level_0_kernel/conv2d_256x512_k3p1.py",
+        "level_0_kernel/relu_512x28x28.py"
+      ]
+    },
+    "level_1_fusion/conv_relu_512x512.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Conv2d(512,512,3,p=1) + ReLU",
+      "input_shapes": [[10, 512, 28, 28]],
+      "output_shapes": [[10, 512, 28, 28]],
+      "children": [
+        "level_0_kernel/conv2d_512x512_k3p1.py",
+        "level_0_kernel/relu_512x28x28_2.py"
+      ]
+    },
+    "level_1_fusion/linear_relu_dropout_25088x4096.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Linear(25088,4096) + ReLU + Dropout(0.0)",
+      "input_shapes": [[10, 25088]],
+      "output_shapes": [[10, 4096]],
+      "children": [
+        "level_0_kernel/linear_25088x4096.py",
+        "level_0_kernel/relu_4096.py",
+        "level_0_kernel/dropout_4096.py"
+      ]
+    },
+    "level_1_fusion/linear_relu_dropout_4096x4096.py": {
+      "level": 1,
+      "type": "fusion",
+      "description": "Linear(4096,4096) + ReLU + Dropout(0.0)",
+      "input_shapes": [[10, 4096]],
+      "output_shapes": [[10, 4096]],
+      "children": [
+        "level_0_kernel/linear_4096x4096.py",
+        "level_0_kernel/relu_4096_2.py",
+        "level_0_kernel/dropout_4096_2.py"
+      ]
+    },
+    "level_0_kernel/conv2d_3x64_k3p1.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(3,64,3,p=1)",
+      "input_shapes": [[10, 3, 224, 224]], "output_shapes": [[10, 64, 224, 224]], "children": []
+    },
+    "level_0_kernel/relu_64x224x224.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,64,224,224]",
+      "input_shapes": [[10, 64, 224, 224]], "output_shapes": [[10, 64, 224, 224]], "children": []
+    },
+    "level_0_kernel/conv2d_64x64_k3p1.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(64,64,3,p=1)",
+      "input_shapes": [[10, 64, 224, 224]], "output_shapes": [[10, 64, 224, 224]], "children": []
+    },
+    "level_0_kernel/relu_64x224x224_2.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,64,224,224] (2nd)",
+      "input_shapes": [[10, 64, 224, 224]], "output_shapes": [[10, 64, 224, 224]], "children": []
+    },
+    "level_0_kernel/maxpool2d_64x224x224.py": {
+      "level": 0, "type": "kernel", "description": "MaxPool2d(2,2) on [10,64,224,224]",
+      "input_shapes": [[10, 64, 224, 224]], "output_shapes": [[10, 64, 112, 112]], "children": []
+    },
+    "level_0_kernel/conv2d_64x128_k3p1.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(64,128,3,p=1)",
+      "input_shapes": [[10, 64, 112, 112]], "output_shapes": [[10, 128, 112, 112]], "children": []
+    },
+    "level_0_kernel/relu_128x112x112.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,128,112,112]",
+      "input_shapes": [[10, 128, 112, 112]], "output_shapes": [[10, 128, 112, 112]], "children": []
+    },
+    "level_0_kernel/conv2d_128x128_k3p1.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(128,128,3,p=1)",
+      "input_shapes": [[10, 128, 112, 112]], "output_shapes": [[10, 128, 112, 112]], "children": []
+    },
+    "level_0_kernel/relu_128x112x112_2.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,128,112,112] (2nd)",
+      "input_shapes": [[10, 128, 112, 112]], "output_shapes": [[10, 128, 112, 112]], "children": []
+    },
+    "level_0_kernel/maxpool2d_128x112x112.py": {
+      "level": 0, "type": "kernel", "description": "MaxPool2d(2,2) on [10,128,112,112]",
+      "input_shapes": [[10, 128, 112, 112]], "output_shapes": [[10, 128, 56, 56]], "children": []
+    },
+    "level_0_kernel/conv2d_128x256_k3p1.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(128,256,3,p=1)",
+      "input_shapes": [[10, 128, 56, 56]], "output_shapes": [[10, 256, 56, 56]], "children": []
+    },
+    "level_0_kernel/relu_256x56x56.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,256,56,56]",
+      "input_shapes": [[10, 256, 56, 56]], "output_shapes": [[10, 256, 56, 56]], "children": []
+    },
+    "level_0_kernel/conv2d_256x256_k3p1.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(256,256,3,p=1) (1st)",
+      "input_shapes": [[10, 256, 56, 56]], "output_shapes": [[10, 256, 56, 56]], "children": []
+    },
+    "level_0_kernel/relu_256x56x56_2.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,256,56,56] (2nd)",
+      "input_shapes": [[10, 256, 56, 56]], "output_shapes": [[10, 256, 56, 56]], "children": []
+    },
+    "level_0_kernel/conv2d_256x256_k3p1_2.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(256,256,3,p=1) (2nd)",
+      "input_shapes": [[10, 256, 56, 56]], "output_shapes": [[10, 256, 56, 56]], "children": []
+    },
+    "level_0_kernel/relu_256x56x56_3.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,256,56,56] (3rd)",
+      "input_shapes": [[10, 256, 56, 56]], "output_shapes": [[10, 256, 56, 56]], "children": []
+    },
+    "level_0_kernel/maxpool2d_256x56x56.py": {
+      "level": 0, "type": "kernel", "description": "MaxPool2d(2,2) on [10,256,56,56]",
+      "input_shapes": [[10, 256, 56, 56]], "output_shapes": [[10, 256, 28, 28]], "children": []
+    },
+    "level_0_kernel/conv2d_256x512_k3p1.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(256,512,3,p=1)",
+      "input_shapes": [[10, 256, 28, 28]], "output_shapes": [[10, 512, 28, 28]], "children": []
+    },
+    "level_0_kernel/relu_512x28x28.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,512,28,28]",
+      "input_shapes": [[10, 512, 28, 28]], "output_shapes": [[10, 512, 28, 28]], "children": []
+    },
+    "level_0_kernel/conv2d_512x512_k3p1.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(512,512,3,p=1) (1st, Block 4)",
+      "input_shapes": [[10, 512, 28, 28]], "output_shapes": [[10, 512, 28, 28]], "children": []
+    },
+    "level_0_kernel/relu_512x28x28_2.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,512,28,28] (2nd)",
+      "input_shapes": [[10, 512, 28, 28]], "output_shapes": [[10, 512, 28, 28]], "children": []
+    },
+    "level_0_kernel/conv2d_512x512_k3p1_2.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(512,512,3,p=1) (2nd, Block 4)",
+      "input_shapes": [[10, 512, 28, 28]], "output_shapes": [[10, 512, 28, 28]], "children": []
+    },
+    "level_0_kernel/relu_512x28x28_3.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,512,28,28] (3rd)",
+      "input_shapes": [[10, 512, 28, 28]], "output_shapes": [[10, 512, 28, 28]], "children": []
+    },
+    "level_0_kernel/maxpool2d_512x28x28.py": {
+      "level": 0, "type": "kernel", "description": "MaxPool2d(2,2) on [10,512,28,28]",
+      "input_shapes": [[10, 512, 28, 28]], "output_shapes": [[10, 512, 14, 14]], "children": []
+    },
+    "level_0_kernel/conv2d_512x512_k3p1_3.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(512,512,3,p=1) (3rd, Block 5)",
+      "input_shapes": [[10, 512, 14, 14]], "output_shapes": [[10, 512, 14, 14]], "children": []
+    },
+    "level_0_kernel/relu_512x14x14.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,512,14,14]",
+      "input_shapes": [[10, 512, 14, 14]], "output_shapes": [[10, 512, 14, 14]], "children": []
+    },
+    "level_0_kernel/conv2d_512x512_k3p1_4.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(512,512,3,p=1) (4th, Block 5)",
+      "input_shapes": [[10, 512, 14, 14]], "output_shapes": [[10, 512, 14, 14]], "children": []
+    },
+    "level_0_kernel/relu_512x14x14_2.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,512,14,14] (2nd)",
+      "input_shapes": [[10, 512, 14, 14]], "output_shapes": [[10, 512, 14, 14]], "children": []
+    },
+    "level_0_kernel/conv2d_512x512_k3p1_5.py": {
+      "level": 0, "type": "kernel", "description": "Conv2d(512,512,3,p=1) (5th, Block 5)",
+      "input_shapes": [[10, 512, 14, 14]], "output_shapes": [[10, 512, 14, 14]], "children": []
+    },
+    "level_0_kernel/relu_512x14x14_3.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,512,14,14] (3rd)",
+      "input_shapes": [[10, 512, 14, 14]], "output_shapes": [[10, 512, 14, 14]], "children": []
+    },
+    "level_0_kernel/maxpool2d_512x14x14.py": {
+      "level": 0, "type": "kernel", "description": "MaxPool2d(2,2) on [10,512,14,14]",
+      "input_shapes": [[10, 512, 14, 14]], "output_shapes": [[10, 512, 7, 7]], "children": []
+    },
+    "level_0_kernel/flatten_512x7x7.py": {
+      "level": 0, "type": "kernel", "description": "Flatten [10,512,7,7] -> [10,25088]",
+      "input_shapes": [[10, 512, 7, 7]], "output_shapes": [[10, 25088]], "children": []
+    },
+    "level_0_kernel/linear_25088x4096.py": {
+      "level": 0, "type": "kernel", "description": "Linear(25088,4096)",
+      "input_shapes": [[10, 25088]], "output_shapes": [[10, 4096]], "children": []
+    },
+    "level_0_kernel/relu_4096.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,4096]",
+      "input_shapes": [[10, 4096]], "output_shapes": [[10, 4096]], "children": []
+    },
+    "level_0_kernel/dropout_4096.py": {
+      "level": 0, "type": "kernel", "description": "Dropout(0.0) on [10,4096]",
+      "input_shapes": [[10, 4096]], "output_shapes": [[10, 4096]], "children": []
+    },
+    "level_0_kernel/linear_4096x4096.py": {
+      "level": 0, "type": "kernel", "description": "Linear(4096,4096)",
+      "input_shapes": [[10, 4096]], "output_shapes": [[10, 4096]], "children": []
+    },
+    "level_0_kernel/relu_4096_2.py": {
+      "level": 0, "type": "kernel", "description": "ReLU on [10,4096] (2nd)",
+      "input_shapes": [[10, 4096]], "output_shapes": [[10, 4096]], "children": []
+    },
+    "level_0_kernel/dropout_4096_2.py": {
+      "level": 0, "type": "kernel", "description": "Dropout(0.0) on [10,4096] (2nd)",
+      "input_shapes": [[10, 4096]], "output_shapes": [[10, 4096]], "children": []
+    },
+    "level_0_kernel/linear_4096x1000.py": {
+      "level": 0, "type": "kernel", "description": "Linear(4096,1000)",
+      "input_shapes": [[10, 4096]], "output_shapes": [[10, 1000]], "children": []
+    }
+  }
+}

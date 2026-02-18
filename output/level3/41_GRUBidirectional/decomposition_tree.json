@@ -1,0 +1,44 @@
+{
+  "model_name": "41_GRUBidirectional",
+  "source": "data/kernelbench/level3/41_GRUBidirectional.py",
+  "description": "6-layer bidirectional GRU model with input_size=128, hidden_size=256, batch_first=False",
+  "input_shapes": {
+    "x": [512, 10, 128],
+    "h0": [12, 10, 256]
+  },
+  "output_shapes": {
+    "output": [512, 10, 512]
+  },
+  "tree": {
+    "name": "gru_bidirectional_model",
+    "level": 2,
+    "type": "layer",
+    "file": "level_2_layer/gru_bidirectional_model.py",
+    "description": "Complete bidirectional GRU model (top-level)",
+    "input_shapes": {"x": [512, 10, 128], "h0": [12, 10, 256]},
+    "output_shapes": {"output": [512, 10, 512]},
+    "children": [
+      {
+        "name": "bigru_fusion",
+        "level": 1,
+        "type": "fusion",
+        "file": "level_1_fusion/bigru_fusion.py",
+        "description": "Fused 6-layer bidirectional GRU operation",
+        "input_shapes": {"x": [512, 10, 128], "h0": [12, 10, 256]},
+        "output_shapes": {"output": [512, 10, 512]},
+        "children": [
+          {
+            "name": "gru_128x256_6layers_bi",
+            "level": 0,
+            "type": "kernel",
+            "file": "level_0_kernel/gru_128x256_6layers_bi.py",
+            "description": "Bidirectional GRU kernel: input=128, hidden=256, layers=6, bias=True, batch_first=False, bidirectional=True",
+            "input_shapes": {"x": [512, 10, 128], "h0": [12, 10, 256]},
+            "output_shapes": {"output": [512, 10, 512]},
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}

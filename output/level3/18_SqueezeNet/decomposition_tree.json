@@ -1,0 +1,527 @@
+{
+  "model": "18_SqueezeNet",
+  "source": "data/kernelbench/level3/18_SqueezeNet.py",
+  "levels": {
+    "level_3_model": {
+      "squeezenet.py": {
+        "description": "Full SqueezeNet model",
+        "input_shapes": [[64, 3, 512, 512]],
+        "output_shapes": [[64, 1000]],
+        "children": [
+          "level_2_layer/initial_conv_block.py",
+          "level_2_layer/fire_module_1.py",
+          "level_2_layer/fire_module_2.py",
+          "level_2_layer/fire_module_3.py",
+          "level_0_kernel/maxpool2d_256x126x126.py",
+          "level_2_layer/fire_module_4.py",
+          "level_2_layer/fire_module_5.py",
+          "level_2_layer/fire_module_6.py",
+          "level_2_layer/fire_module_7.py",
+          "level_0_kernel/maxpool2d_512x63x63.py",
+          "level_2_layer/fire_module_8.py",
+          "level_2_layer/classifier.py"
+        ]
+      }
+    },
+    "level_2_layer": {
+      "initial_conv_block.py": {
+        "description": "Conv2d(3,96,k=7,s=2) + ReLU + MaxPool2d(3,2,ceil)",
+        "input_shapes": [[64, 3, 512, 512]],
+        "output_shapes": [[64, 96, 126, 126]],
+        "children": [
+          "level_0_kernel/conv2d_3x96_k7s2.py",
+          "level_0_kernel/relu_96x253x253.py",
+          "level_0_kernel/maxpool2d_96x253x253.py"
+        ]
+      },
+      "fire_module_1.py": {
+        "description": "Fire(96,16,64,64)",
+        "input_shapes": [[64, 96, 126, 126]],
+        "output_shapes": [[64, 128, 126, 126]],
+        "children": [
+          "level_1_fusion/squeeze_conv_relu_96x16.py",
+          "level_1_fusion/expand_concat_16x64x64.py"
+        ]
+      },
+      "fire_module_2.py": {
+        "description": "Fire(128,16,64,64)",
+        "input_shapes": [[64, 128, 126, 126]],
+        "output_shapes": [[64, 128, 126, 126]],
+        "children": [
+          "level_1_fusion/squeeze_conv_relu_128x16.py",
+          "level_1_fusion/expand_concat_16x64x64_2.py"
+        ]
+      },
+      "fire_module_3.py": {
+        "description": "Fire(128,32,128,128)",
+        "input_shapes": [[64, 128, 126, 126]],
+        "output_shapes": [[64, 256, 126, 126]],
+        "children": [
+          "level_1_fusion/squeeze_conv_relu_128x32.py",
+          "level_1_fusion/expand_concat_32x128x128.py"
+        ]
+      },
+      "fire_module_4.py": {
+        "description": "Fire(256,32,128,128) after maxpool",
+        "input_shapes": [[64, 256, 63, 63]],
+        "output_shapes": [[64, 256, 63, 63]],
+        "children": [
+          "level_1_fusion/squeeze_conv_relu_256x32.py",
+          "level_1_fusion/expand_concat_32x128x128_2.py"
+        ]
+      },
+      "fire_module_5.py": {
+        "description": "Fire(256,48,192,192)",
+        "input_shapes": [[64, 256, 63, 63]],
+        "output_shapes": [[64, 384, 63, 63]],
+        "children": [
+          "level_1_fusion/squeeze_conv_relu_256x48.py",
+          "level_1_fusion/expand_concat_48x192x192.py"
+        ]
+      },
+      "fire_module_6.py": {
+        "description": "Fire(384,48,192,192)",
+        "input_shapes": [[64, 384, 63, 63]],
+        "output_shapes": [[64, 384, 63, 63]],
+        "children": [
+          "level_1_fusion/squeeze_conv_relu_384x48.py",
+          "level_1_fusion/expand_concat_48x192x192_2.py"
+        ]
+      },
+      "fire_module_7.py": {
+        "description": "Fire(384,64,256,256)",
+        "input_shapes": [[64, 384, 63, 63]],
+        "output_shapes": [[64, 512, 63, 63]],
+        "children": [
+          "level_1_fusion/squeeze_conv_relu_384x64.py",
+          "level_1_fusion/expand_concat_64x256x256.py"
+        ]
+      },
+      "fire_module_8.py": {
+        "description": "Fire(512,64,256,256) after maxpool",
+        "input_shapes": [[64, 512, 31, 31]],
+        "output_shapes": [[64, 512, 31, 31]],
+        "children": [
+          "level_1_fusion/squeeze_conv_relu_512x64.py",
+          "level_1_fusion/expand_concat_64x256x256_2.py"
+        ]
+      },
+      "classifier.py": {
+        "description": "Dropout + Conv2d(512,1000,k=1) + ReLU + AdaptiveAvgPool2d(1,1) + Flatten",
+        "input_shapes": [[64, 512, 31, 31]],
+        "output_shapes": [[64, 1000]],
+        "children": [
+          "level_0_kernel/dropout_512x31x31.py",
+          "level_0_kernel/conv2d_512x1000_k1.py",
+          "level_0_kernel/relu_1000x31x31.py",
+          "level_0_kernel/adaptive_avg_pool2d_1000.py",
+          "level_0_kernel/flatten_1000x1x1.py"
+        ]
+      }
+    },
+    "level_1_fusion": {
+      "squeeze_conv_relu_96x16.py": {
+        "description": "Squeeze Conv2d(96,16,k=1) + ReLU for Fire Module 1",
+        "input_shapes": [[64, 96, 126, 126]],
+        "output_shapes": [[64, 16, 126, 126]],
+        "children": [
+          "level_0_kernel/conv2d_96x16_k1.py",
+          "level_0_kernel/relu_16x126x126.py"
+        ]
+      },
+      "expand_concat_16x64x64.py": {
+        "description": "Expand1x1+ReLU, Expand3x3+ReLU, Cat for Fire Module 1",
+        "input_shapes": [[64, 16, 126, 126]],
+        "output_shapes": [[64, 128, 126, 126]],
+        "children": [
+          "level_0_kernel/conv2d_16x64_k1.py",
+          "level_0_kernel/relu_64x126x126.py",
+          "level_0_kernel/conv2d_16x64_k3p1.py",
+          "level_0_kernel/cat_64_64_126.py"
+        ]
+      },
+      "squeeze_conv_relu_128x16.py": {
+        "description": "Squeeze Conv2d(128,16,k=1) + ReLU for Fire Module 2",
+        "input_shapes": [[64, 128, 126, 126]],
+        "output_shapes": [[64, 16, 126, 126]],
+        "children": [
+          "level_0_kernel/conv2d_128x16_k1.py",
+          "level_0_kernel/relu_16x126x126.py"
+        ]
+      },
+      "expand_concat_16x64x64_2.py": {
+        "description": "Expand1x1+ReLU, Expand3x3+ReLU, Cat for Fire Module 2",
+        "input_shapes": [[64, 16, 126, 126]],
+        "output_shapes": [[64, 128, 126, 126]],
+        "children": [
+          "level_0_kernel/conv2d_16x64_k1.py",
+          "level_0_kernel/relu_64x126x126.py",
+          "level_0_kernel/conv2d_16x64_k3p1.py",
+          "level_0_kernel/cat_64_64_126.py"
+        ]
+      },
+      "squeeze_conv_relu_128x32.py": {
+        "description": "Squeeze Conv2d(128,32,k=1) + ReLU for Fire Module 3",
+        "input_shapes": [[64, 128, 126, 126]],
+        "output_shapes": [[64, 32, 126, 126]],
+        "children": [
+          "level_0_kernel/conv2d_128x32_k1.py",
+          "level_0_kernel/relu_32x126x126.py"
+        ]
+      },
+      "expand_concat_32x128x128.py": {
+        "description": "Expand1x1+ReLU, Expand3x3+ReLU, Cat for Fire Module 3",
+        "input_shapes": [[64, 32, 126, 126]],
+        "output_shapes": [[64, 256, 126, 126]],
+        "children": [
+          "level_0_kernel/conv2d_32x128_k1_126.py",
+          "level_0_kernel/relu_128x126x126.py",
+          "level_0_kernel/conv2d_32x128_k3p1_126.py",
+          "level_0_kernel/cat_128_128_126.py"
+        ]
+      },
+      "squeeze_conv_relu_256x32.py": {
+        "description": "Squeeze Conv2d(256,32,k=1) + ReLU for Fire Module 4",
+        "input_shapes": [[64, 256, 63, 63]],
+        "output_shapes": [[64, 32, 63, 63]],
+        "children": [
+          "level_0_kernel/conv2d_256x32_k1.py",
+          "level_0_kernel/relu_32x63x63.py"
+        ]
+      },
+      "expand_concat_32x128x128_2.py": {
+        "description": "Expand1x1+ReLU, Expand3x3+ReLU, Cat for Fire Module 4",
+        "input_shapes": [[64, 32, 63, 63]],
+        "output_shapes": [[64, 256, 63, 63]],
+        "children": [
+          "level_0_kernel/conv2d_32x128_k1_63.py",
+          "level_0_kernel/relu_128x63x63.py",
+          "level_0_kernel/conv2d_32x128_k3p1_63.py",
+          "level_0_kernel/cat_128_128_63.py"
+        ]
+      },
+      "squeeze_conv_relu_256x48.py": {
+        "description": "Squeeze Conv2d(256,48,k=1) + ReLU for Fire Module 5",
+        "input_shapes": [[64, 256, 63, 63]],
+        "output_shapes": [[64, 48, 63, 63]],
+        "children": [
+          "level_0_kernel/conv2d_256x48_k1.py",
+          "level_0_kernel/relu_48x63x63.py"
+        ]
+      },
+      "expand_concat_48x192x192.py": {
+        "description": "Expand1x1+ReLU, Expand3x3+ReLU, Cat for Fire Module 5",
+        "input_shapes": [[64, 48, 63, 63]],
+        "output_shapes": [[64, 384, 63, 63]],
+        "children": [
+          "level_0_kernel/conv2d_48x192_k1.py",
+          "level_0_kernel/relu_192x63x63.py",
+          "level_0_kernel/conv2d_48x192_k3p1.py",
+          "level_0_kernel/cat_192_192_63.py"
+        ]
+      },
+      "squeeze_conv_relu_384x48.py": {
+        "description": "Squeeze Conv2d(384,48,k=1) + ReLU for Fire Module 6",
+        "input_shapes": [[64, 384, 63, 63]],
+        "output_shapes": [[64, 48, 63, 63]],
+        "children": [
+          "level_0_kernel/conv2d_384x48_k1.py",
+          "level_0_kernel/relu_48x63x63.py"
+        ]
+      },
+      "expand_concat_48x192x192_2.py": {
+        "description": "Expand1x1+ReLU, Expand3x3+ReLU, Cat for Fire Module 6",
+        "input_shapes": [[64, 48, 63, 63]],
+        "output_shapes": [[64, 384, 63, 63]],
+        "children": [
+          "level_0_kernel/conv2d_48x192_k1.py",
+          "level_0_kernel/relu_192x63x63.py",
+          "level_0_kernel/conv2d_48x192_k3p1.py",
+          "level_0_kernel/cat_192_192_63.py"
+        ]
+      },
+      "squeeze_conv_relu_384x64.py": {
+        "description": "Squeeze Conv2d(384,64,k=1) + ReLU for Fire Module 7",
+        "input_shapes": [[64, 384, 63, 63]],
+        "output_shapes": [[64, 64, 63, 63]],
+        "children": [
+          "level_0_kernel/conv2d_384x64_k1.py",
+          "level_0_kernel/relu_64x63x63.py"
+        ]
+      },
+      "expand_concat_64x256x256.py": {
+        "description": "Expand1x1+ReLU, Expand3x3+ReLU, Cat for Fire Module 7",
+        "input_shapes": [[64, 64, 63, 63]],
+        "output_shapes": [[64, 512, 63, 63]],
+        "children": [
+          "level_0_kernel/conv2d_64x256_k1_63.py",
+          "level_0_kernel/relu_256x63x63.py",
+          "level_0_kernel/conv2d_64x256_k3p1_63.py",
+          "level_0_kernel/cat_256_256_63.py"
+        ]
+      },
+      "squeeze_conv_relu_512x64.py": {
+        "description": "Squeeze Conv2d(512,64,k=1) + ReLU for Fire Module 8",
+        "input_shapes": [[64, 512, 31, 31]],
+        "output_shapes": [[64, 64, 31, 31]],
+        "children": [
+          "level_0_kernel/conv2d_512x64_k1.py",
+          "level_0_kernel/relu_64x31x31.py"
+        ]
+      },
+      "expand_concat_64x256x256_2.py": {
+        "description": "Expand1x1+ReLU, Expand3x3+ReLU, Cat for Fire Module 8",
+        "input_shapes": [[64, 64, 31, 31]],
+        "output_shapes": [[64, 512, 31, 31]],
+        "children": [
+          "level_0_kernel/conv2d_64x256_k1_31.py",
+          "level_0_kernel/relu_256x31x31.py",
+          "level_0_kernel/conv2d_64x256_k3p1_31.py",
+          "level_0_kernel/cat_256_256_31.py"
+        ]
+      }
+    },
+    "level_0_kernel": {
+      "conv2d_3x96_k7s2.py": {
+        "description": "Conv2d(3, 96, kernel_size=7, stride=2)",
+        "input_shapes": [[64, 3, 512, 512]],
+        "output_shapes": [[64, 96, 253, 253]]
+      },
+      "relu_96x253x253.py": {
+        "description": "ReLU on [64, 96, 253, 253]",
+        "input_shapes": [[64, 96, 253, 253]],
+        "output_shapes": [[64, 96, 253, 253]]
+      },
+      "maxpool2d_96x253x253.py": {
+        "description": "MaxPool2d(3, 2, ceil) on [64, 96, 253, 253]",
+        "input_shapes": [[64, 96, 253, 253]],
+        "output_shapes": [[64, 96, 126, 126]]
+      },
+      "conv2d_96x16_k1.py": {
+        "description": "Conv2d(96, 16, k=1) squeeze for Fire1",
+        "input_shapes": [[64, 96, 126, 126]],
+        "output_shapes": [[64, 16, 126, 126]]
+      },
+      "relu_16x126x126.py": {
+        "description": "ReLU on [64, 16, 126, 126]",
+        "input_shapes": [[64, 16, 126, 126]],
+        "output_shapes": [[64, 16, 126, 126]]
+      },
+      "conv2d_16x64_k1.py": {
+        "description": "Conv2d(16, 64, k=1) expand1x1 for Fire1,2",
+        "input_shapes": [[64, 16, 126, 126]],
+        "output_shapes": [[64, 64, 126, 126]]
+      },
+      "relu_64x126x126.py": {
+        "description": "ReLU on [64, 64, 126, 126]",
+        "input_shapes": [[64, 64, 126, 126]],
+        "output_shapes": [[64, 64, 126, 126]]
+      },
+      "conv2d_16x64_k3p1.py": {
+        "description": "Conv2d(16, 64, k=3, p=1) expand3x3 for Fire1,2",
+        "input_shapes": [[64, 16, 126, 126]],
+        "output_shapes": [[64, 64, 126, 126]]
+      },
+      "cat_64_64_126.py": {
+        "description": "Cat [64,64,126,126]+[64,64,126,126] -> [64,128,126,126]",
+        "input_shapes": [[64, 64, 126, 126], [64, 64, 126, 126]],
+        "output_shapes": [[64, 128, 126, 126]]
+      },
+      "conv2d_128x16_k1.py": {
+        "description": "Conv2d(128, 16, k=1) squeeze for Fire2",
+        "input_shapes": [[64, 128, 126, 126]],
+        "output_shapes": [[64, 16, 126, 126]]
+      },
+      "conv2d_128x32_k1.py": {
+        "description": "Conv2d(128, 32, k=1) squeeze for Fire3",
+        "input_shapes": [[64, 128, 126, 126]],
+        "output_shapes": [[64, 32, 126, 126]]
+      },
+      "relu_32x126x126.py": {
+        "description": "ReLU on [64, 32, 126, 126]",
+        "input_shapes": [[64, 32, 126, 126]],
+        "output_shapes": [[64, 32, 126, 126]]
+      },
+      "conv2d_32x128_k1_126.py": {
+        "description": "Conv2d(32, 128, k=1) expand1x1 for Fire3 (126x126)",
+        "input_shapes": [[64, 32, 126, 126]],
+        "output_shapes": [[64, 128, 126, 126]]
+      },
+      "relu_128x126x126.py": {
+        "description": "ReLU on [64, 128, 126, 126]",
+        "input_shapes": [[64, 128, 126, 126]],
+        "output_shapes": [[64, 128, 126, 126]]
+      },
+      "conv2d_32x128_k3p1_126.py": {
+        "description": "Conv2d(32, 128, k=3, p=1) expand3x3 for Fire3 (126x126)",
+        "input_shapes": [[64, 32, 126, 126]],
+        "output_shapes": [[64, 128, 126, 126]]
+      },
+      "cat_128_128_126.py": {
+        "description": "Cat [64,128,126,126]+[64,128,126,126] -> [64,256,126,126]",
+        "input_shapes": [[64, 128, 126, 126], [64, 128, 126, 126]],
+        "output_shapes": [[64, 256, 126, 126]]
+      },
+      "maxpool2d_256x126x126.py": {
+        "description": "MaxPool2d(3, 2, ceil) on [64, 256, 126, 126]",
+        "input_shapes": [[64, 256, 126, 126]],
+        "output_shapes": [[64, 256, 63, 63]]
+      },
+      "conv2d_256x32_k1.py": {
+        "description": "Conv2d(256, 32, k=1) squeeze for Fire4",
+        "input_shapes": [[64, 256, 63, 63]],
+        "output_shapes": [[64, 32, 63, 63]]
+      },
+      "relu_32x63x63.py": {
+        "description": "ReLU on [64, 32, 63, 63]",
+        "input_shapes": [[64, 32, 63, 63]],
+        "output_shapes": [[64, 32, 63, 63]]
+      },
+      "conv2d_32x128_k1_63.py": {
+        "description": "Conv2d(32, 128, k=1) expand1x1 for Fire4 (63x63)",
+        "input_shapes": [[64, 32, 63, 63]],
+        "output_shapes": [[64, 128, 63, 63]]
+      },
+      "relu_128x63x63.py": {
+        "description": "ReLU on [64, 128, 63, 63]",
+        "input_shapes": [[64, 128, 63, 63]],
+        "output_shapes": [[64, 128, 63, 63]]
+      },
+      "conv2d_32x128_k3p1_63.py": {
+        "description": "Conv2d(32, 128, k=3, p=1) expand3x3 for Fire4 (63x63)",
+        "input_shapes": [[64, 32, 63, 63]],
+        "output_shapes": [[64, 128, 63, 63]]
+      },
+      "cat_128_128_63.py": {
+        "description": "Cat [64,128,63,63]+[64,128,63,63] -> [64,256,63,63]",
+        "input_shapes": [[64, 128, 63, 63], [64, 128, 63, 63]],
+        "output_shapes": [[64, 256, 63, 63]]
+      },
+      "conv2d_256x48_k1.py": {
+        "description": "Conv2d(256, 48, k=1) squeeze for Fire5",
+        "input_shapes": [[64, 256, 63, 63]],
+        "output_shapes": [[64, 48, 63, 63]]
+      },
+      "relu_48x63x63.py": {
+        "description": "ReLU on [64, 48, 63, 63]",
+        "input_shapes": [[64, 48, 63, 63]],
+        "output_shapes": [[64, 48, 63, 63]]
+      },
+      "conv2d_48x192_k1.py": {
+        "description": "Conv2d(48, 192, k=1) expand1x1 for Fire5,6",
+        "input_shapes": [[64, 48, 63, 63]],
+        "output_shapes": [[64, 192, 63, 63]]
+      },
+      "relu_192x63x63.py": {
+        "description": "ReLU on [64, 192, 63, 63]",
+        "input_shapes": [[64, 192, 63, 63]],
+        "output_shapes": [[64, 192, 63, 63]]
+      },
+      "conv2d_48x192_k3p1.py": {
+        "description": "Conv2d(48, 192, k=3, p=1) expand3x3 for Fire5,6",
+        "input_shapes": [[64, 48, 63, 63]],
+        "output_shapes": [[64, 192, 63, 63]]
+      },
+      "cat_192_192_63.py": {
+        "description": "Cat [64,192,63,63]+[64,192,63,63] -> [64,384,63,63]",
+        "input_shapes": [[64, 192, 63, 63], [64, 192, 63, 63]],
+        "output_shapes": [[64, 384, 63, 63]]
+      },
+      "conv2d_384x48_k1.py": {
+        "description": "Conv2d(384, 48, k=1) squeeze for Fire6",
+        "input_shapes": [[64, 384, 63, 63]],
+        "output_shapes": [[64, 48, 63, 63]]
+      },
+      "conv2d_384x64_k1.py": {
+        "description": "Conv2d(384, 64, k=1) squeeze for Fire7",
+        "input_shapes": [[64, 384, 63, 63]],
+        "output_shapes": [[64, 64, 63, 63]]
+      },
+      "relu_64x63x63.py": {
+        "description": "ReLU on [64, 64, 63, 63]",
+        "input_shapes": [[64, 64, 63, 63]],
+        "output_shapes": [[64, 64, 63, 63]]
+      },
+      "conv2d_64x256_k1_63.py": {
+        "description": "Conv2d(64, 256, k=1) expand1x1 for Fire7 (63x63)",
+        "input_shapes": [[64, 64, 63, 63]],
+        "output_shapes": [[64, 256, 63, 63]]
+      },
+      "relu_256x63x63.py": {
+        "description": "ReLU on [64, 256, 63, 63]",
+        "input_shapes": [[64, 256, 63, 63]],
+        "output_shapes": [[64, 256, 63, 63]]
+      },
+      "conv2d_64x256_k3p1_63.py": {
+        "description": "Conv2d(64, 256, k=3, p=1) expand3x3 for Fire7 (63x63)",
+        "input_shapes": [[64, 64, 63, 63]],
+        "output_shapes": [[64, 256, 63, 63]]
+      },
+      "cat_256_256_63.py": {
+        "description": "Cat [64,256,63,63]+[64,256,63,63] -> [64,512,63,63]",
+        "input_shapes": [[64, 256, 63, 63], [64, 256, 63, 63]],
+        "output_shapes": [[64, 512, 63, 63]]
+      },
+      "maxpool2d_512x63x63.py": {
+        "description": "MaxPool2d(3, 2, ceil) on [64, 512, 63, 63]",
+        "input_shapes": [[64, 512, 63, 63]],
+        "output_shapes": [[64, 512, 31, 31]]
+      },
+      "conv2d_512x64_k1.py": {
+        "description": "Conv2d(512, 64, k=1) squeeze for Fire8",
+        "input_shapes": [[64, 512, 31, 31]],
+        "output_shapes": [[64, 64, 31, 31]]
+      },
+      "relu_64x31x31.py": {
+        "description": "ReLU on [64, 64, 31, 31]",
+        "input_shapes": [[64, 64, 31, 31]],
+        "output_shapes": [[64, 64, 31, 31]]
+      },
+      "conv2d_64x256_k1_31.py": {
+        "description": "Conv2d(64, 256, k=1) expand1x1 for Fire8 (31x31)",
+        "input_shapes": [[64, 64, 31, 31]],
+        "output_shapes": [[64, 256, 31, 31]]
+      },
+      "relu_256x31x31.py": {
+        "description": "ReLU on [64, 256, 31, 31]",
+        "input_shapes": [[64, 256, 31, 31]],
+        "output_shapes": [[64, 256, 31, 31]]
+      },
+      "conv2d_64x256_k3p1_31.py": {
+        "description": "Conv2d(64, 256, k=3, p=1) expand3x3 for Fire8 (31x31)",
+        "input_shapes": [[64, 64, 31, 31]],
+        "output_shapes": [[64, 256, 31, 31]]
+      },
+      "cat_256_256_31.py": {
+        "description": "Cat [64,256,31,31]+[64,256,31,31] -> [64,512,31,31]",
+        "input_shapes": [[64, 256, 31, 31], [64, 256, 31, 31]],
+        "output_shapes": [[64, 512, 31, 31]]
+      },
+      "dropout_512x31x31.py": {
+        "description": "Dropout(p=0.0) on [64, 512, 31, 31]",
+        "input_shapes": [[64, 512, 31, 31]],
+        "output_shapes": [[64, 512, 31, 31]]
+      },
+      "conv2d_512x1000_k1.py": {
+        "description": "Conv2d(512, 1000, k=1) classifier conv",
+        "input_shapes": [[64, 512, 31, 31]],
+        "output_shapes": [[64, 1000, 31, 31]]
+      },
+      "relu_1000x31x31.py": {
+        "description": "ReLU on [64, 1000, 31, 31]",
+        "input_shapes": [[64, 1000, 31, 31]],
+        "output_shapes": [[64, 1000, 31, 31]]
+      },
+      "adaptive_avg_pool2d_1000.py": {
+        "description": "AdaptiveAvgPool2d((1,1)) on [64, 1000, 31, 31]",
+        "input_shapes": [[64, 1000, 31, 31]],
+        "output_shapes": [[64, 1000, 1, 1]]
+      },
+      "flatten_1000x1x1.py": {
+        "description": "Flatten [64, 1000, 1, 1] -> [64, 1000]",
+        "input_shapes": [[64, 1000, 1, 1]],
+        "output_shapes": [[64, 1000]]
+      }
+    }
+  }
+}

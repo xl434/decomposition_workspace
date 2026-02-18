@@ -1,0 +1,62 @@
+{
+  "model_name": "39_GRU",
+  "source": "data/kernelbench/level3/39_GRU.py",
+  "description": "6-layer GRU model with input_size=128, hidden_size=256, batch_first=False",
+  "tree": {
+    "name": "gru_model",
+    "level": "layer",
+    "level_num": 2,
+    "file": "level_2_layer/gru_model.py",
+    "description": "Complete GRU model: takes (x, h0), runs GRU, returns output sequence",
+    "input_shapes": {
+      "x": [512, 10, 128],
+      "h0": [6, 10, 256]
+    },
+    "output_shapes": {
+      "output": [512, 10, 256]
+    },
+    "children": [
+      {
+        "name": "gru_fusion",
+        "level": "fusion",
+        "level_num": 1,
+        "file": "level_1_fusion/gru_fusion.py",
+        "description": "Fused GRU operation: nn.GRU(128, 256, 6, bias=True, batch_first=False, bidirectional=False)",
+        "operations": [
+          "nn.GRU(input_size=128, hidden_size=256, num_layers=6, bias=True, batch_first=False, dropout=0, bidirectional=False)"
+        ],
+        "input_shapes": {
+          "x": [512, 10, 128],
+          "h0": [6, 10, 256]
+        },
+        "output_shapes": {
+          "output": [512, 10, 256]
+        },
+        "children": [
+          {
+            "name": "gru_128x256_6layers",
+            "level": "kernel",
+            "level_num": 0,
+            "file": "level_0_kernel/gru_128x256_6layers.py",
+            "description": "GRU kernel: fused CUDA/cuDNN GRU operation across 6 layers and 512 time steps. Returns both output and h_n.",
+            "operations": [
+              "GRU forward (fused): reset_gate = sigmoid(W_ir @ x + b_ir + W_hr @ h + b_hr)",
+              "GRU forward (fused): update_gate = sigmoid(W_iz @ x + b_iz + W_hz @ h + b_hz)",
+              "GRU forward (fused): new_gate = tanh(W_in @ x + b_in + r * (W_hn @ h + b_hn))",
+              "GRU forward (fused): h_new = (1 - z) * n + z * h"
+            ],
+            "input_shapes": {
+              "x": [512, 10, 128],
+              "h0": [6, 10, 256]
+            },
+            "output_shapes": {
+              "output": [512, 10, 256],
+              "h_n": [6, 10, 256]
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}
