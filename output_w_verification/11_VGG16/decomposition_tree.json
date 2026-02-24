@@ -1,0 +1,631 @@
+{
+  "metadata": {
+    "source_file": "data/kernelbench/level3/11_VGG16.py",
+    "source_level": "level3",
+    "model_name": "11_VGG16",
+    "timestamp": "2026-02-24T00:00:00Z",
+    "total_components": 66,
+    "by_level": {
+      "model": 1,
+      "layer": 6,
+      "fusion": 21,
+      "kernel": 38
+    },
+    "verification_status": "PASSED"
+  },
+  "nodes": {
+    "root": {
+      "id": "root",
+      "name": "VGG16",
+      "level": "model",
+      "path": "level_3_model/vgg16.py",
+      "children": [
+        "features_block_1",
+        "features_block_2",
+        "features_block_3",
+        "features_block_4",
+        "features_block_5",
+        "classifier"
+      ],
+      "input_shapes": {"x": [10, 3, 224, 224]},
+      "output_shapes": {"output": [10, 1000]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "features_block_1": {
+      "id": "features_block_1",
+      "name": "Features Block 1",
+      "level": "layer",
+      "path": "level_2_layer/features_block_1.py",
+      "children": ["conv_relu_3x64", "conv_relu_64x64", "maxpool2d_b1"],
+      "input_shapes": {"x": [10, 3, 224, 224]},
+      "output_shapes": {"output": [10, 64, 112, 112]}
+    },
+    "features_block_2": {
+      "id": "features_block_2",
+      "name": "Features Block 2",
+      "level": "layer",
+      "path": "level_2_layer/features_block_2.py",
+      "children": ["conv_relu_64x128", "conv_relu_128x128", "maxpool2d_b2"],
+      "input_shapes": {"x": [10, 64, 112, 112]},
+      "output_shapes": {"output": [10, 128, 56, 56]}
+    },
+    "features_block_3": {
+      "id": "features_block_3",
+      "name": "Features Block 3",
+      "level": "layer",
+      "path": "level_2_layer/features_block_3.py",
+      "children": ["conv_relu_128x256", "conv_relu_256x256_a", "conv_relu_256x256_b", "maxpool2d_b3"],
+      "input_shapes": {"x": [10, 128, 56, 56]},
+      "output_shapes": {"output": [10, 256, 28, 28]}
+    },
+    "features_block_4": {
+      "id": "features_block_4",
+      "name": "Features Block 4",
+      "level": "layer",
+      "path": "level_2_layer/features_block_4.py",
+      "children": ["conv_relu_256x512", "conv_relu_512x512_b4a", "conv_relu_512x512_b4b", "maxpool2d_b4"],
+      "input_shapes": {"x": [10, 256, 28, 28]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "features_block_5": {
+      "id": "features_block_5",
+      "name": "Features Block 5",
+      "level": "layer",
+      "path": "level_2_layer/features_block_5.py",
+      "children": ["conv_relu_512x512_b5a", "conv_relu_512x512_b5b", "conv_relu_512x512_b5c", "maxpool2d_b5"],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 7, 7]}
+    },
+    "classifier": {
+      "id": "classifier",
+      "name": "Classifier",
+      "level": "layer",
+      "path": "level_2_layer/classifier.py",
+      "children": ["linear_relu_dropout_25088x4096", "linear_relu_dropout_4096x4096", "linear_4096x1000"],
+      "input_shapes": {"x": [10, 25088]},
+      "output_shapes": {"output": [10, 1000]}
+    },
+    "conv_relu_3x64": {
+      "id": "conv_relu_3x64",
+      "name": "Conv2d(3,64)+ReLU",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_3x64_fp32.py",
+      "children": ["conv2d_3x64_b1a", "relu_b1a"],
+      "input_shapes": {"x": [10, 3, 224, 224]},
+      "output_shapes": {"output": [10, 64, 224, 224]}
+    },
+    "conv_relu_64x64": {
+      "id": "conv_relu_64x64",
+      "name": "Conv2d(64,64)+ReLU",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_64x64_fp32.py",
+      "children": ["conv2d_64x64_b1b", "relu_b1b"],
+      "input_shapes": {"x": [10, 64, 224, 224]},
+      "output_shapes": {"output": [10, 64, 224, 224]}
+    },
+    "maxpool2d_b1": {
+      "id": "maxpool2d_b1",
+      "name": "MaxPool2d Block1",
+      "level": "fusion",
+      "path": "level_1_fusion/maxpool2d_b1_fp32.py",
+      "children": ["maxpool2d_b1_kernel"],
+      "input_shapes": {"x": [10, 64, 224, 224]},
+      "output_shapes": {"output": [10, 64, 112, 112]}
+    },
+    "conv_relu_64x128": {
+      "id": "conv_relu_64x128",
+      "name": "Conv2d(64,128)+ReLU",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_64x128_fp32.py",
+      "children": ["conv2d_64x128_b2a", "relu_b2a"],
+      "input_shapes": {"x": [10, 64, 112, 112]},
+      "output_shapes": {"output": [10, 128, 112, 112]}
+    },
+    "conv_relu_128x128": {
+      "id": "conv_relu_128x128",
+      "name": "Conv2d(128,128)+ReLU",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_128x128_fp32.py",
+      "children": ["conv2d_128x128_b2b", "relu_b2b"],
+      "input_shapes": {"x": [10, 128, 112, 112]},
+      "output_shapes": {"output": [10, 128, 112, 112]}
+    },
+    "maxpool2d_b2": {
+      "id": "maxpool2d_b2",
+      "name": "MaxPool2d Block2",
+      "level": "fusion",
+      "path": "level_1_fusion/maxpool2d_b2_fp32.py",
+      "children": ["maxpool2d_b2_kernel"],
+      "input_shapes": {"x": [10, 128, 112, 112]},
+      "output_shapes": {"output": [10, 128, 56, 56]}
+    },
+    "conv_relu_128x256": {
+      "id": "conv_relu_128x256",
+      "name": "Conv2d(128,256)+ReLU",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_128x256_fp32.py",
+      "children": ["conv2d_128x256_b3a", "relu_b3a"],
+      "input_shapes": {"x": [10, 128, 56, 56]},
+      "output_shapes": {"output": [10, 256, 56, 56]}
+    },
+    "conv_relu_256x256_a": {
+      "id": "conv_relu_256x256_a",
+      "name": "Conv2d(256,256)+ReLU (a)",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_256x256_a_fp32.py",
+      "children": ["conv2d_256x256_b3b", "relu_b3b"],
+      "input_shapes": {"x": [10, 256, 56, 56]},
+      "output_shapes": {"output": [10, 256, 56, 56]}
+    },
+    "conv_relu_256x256_b": {
+      "id": "conv_relu_256x256_b",
+      "name": "Conv2d(256,256)+ReLU (b)",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_256x256_b_fp32.py",
+      "children": ["conv2d_256x256_b3c", "relu_b3c"],
+      "input_shapes": {"x": [10, 256, 56, 56]},
+      "output_shapes": {"output": [10, 256, 56, 56]}
+    },
+    "maxpool2d_b3": {
+      "id": "maxpool2d_b3",
+      "name": "MaxPool2d Block3",
+      "level": "fusion",
+      "path": "level_1_fusion/maxpool2d_b3_fp32.py",
+      "children": ["maxpool2d_b3_kernel"],
+      "input_shapes": {"x": [10, 256, 56, 56]},
+      "output_shapes": {"output": [10, 256, 28, 28]}
+    },
+    "conv_relu_256x512": {
+      "id": "conv_relu_256x512",
+      "name": "Conv2d(256,512)+ReLU",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_256x512_fp32.py",
+      "children": ["conv2d_256x512_b4a", "relu_b4a"],
+      "input_shapes": {"x": [10, 256, 28, 28]},
+      "output_shapes": {"output": [10, 512, 28, 28]}
+    },
+    "conv_relu_512x512_b4a": {
+      "id": "conv_relu_512x512_b4a",
+      "name": "Conv2d(512,512)+ReLU B4a",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_512x512_b4a_fp32.py",
+      "children": ["conv2d_512x512_b4b", "relu_b4b"],
+      "input_shapes": {"x": [10, 512, 28, 28]},
+      "output_shapes": {"output": [10, 512, 28, 28]}
+    },
+    "conv_relu_512x512_b4b": {
+      "id": "conv_relu_512x512_b4b",
+      "name": "Conv2d(512,512)+ReLU B4b",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_512x512_b4b_fp32.py",
+      "children": ["conv2d_512x512_b4c", "relu_b4c"],
+      "input_shapes": {"x": [10, 512, 28, 28]},
+      "output_shapes": {"output": [10, 512, 28, 28]}
+    },
+    "maxpool2d_b4": {
+      "id": "maxpool2d_b4",
+      "name": "MaxPool2d Block4",
+      "level": "fusion",
+      "path": "level_1_fusion/maxpool2d_b4_fp32.py",
+      "children": ["maxpool2d_b4_kernel"],
+      "input_shapes": {"x": [10, 512, 28, 28]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "conv_relu_512x512_b5a": {
+      "id": "conv_relu_512x512_b5a",
+      "name": "Conv2d(512,512)+ReLU B5a",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_512x512_b5a_fp32.py",
+      "children": ["conv2d_512x512_b5a", "relu_b5a"],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "conv_relu_512x512_b5b": {
+      "id": "conv_relu_512x512_b5b",
+      "name": "Conv2d(512,512)+ReLU B5b",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_512x512_b5b_fp32.py",
+      "children": ["conv2d_512x512_b5b", "relu_b5b"],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "conv_relu_512x512_b5c": {
+      "id": "conv_relu_512x512_b5c",
+      "name": "Conv2d(512,512)+ReLU B5c",
+      "level": "fusion",
+      "path": "level_1_fusion/conv_relu_512x512_b5c_fp32.py",
+      "children": ["conv2d_512x512_b5c", "relu_b5c"],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "maxpool2d_b5": {
+      "id": "maxpool2d_b5",
+      "name": "MaxPool2d Block5",
+      "level": "fusion",
+      "path": "level_1_fusion/maxpool2d_b5_fp32.py",
+      "children": ["maxpool2d_b5_kernel"],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 7, 7]}
+    },
+    "linear_relu_dropout_25088x4096": {
+      "id": "linear_relu_dropout_25088x4096",
+      "name": "Linear(25088,4096)+ReLU+Dropout",
+      "level": "fusion",
+      "path": "level_1_fusion/linear_relu_dropout_25088x4096_fp32.py",
+      "children": ["linear_25088x4096", "relu_cls_a", "dropout_cls_a"],
+      "input_shapes": {"x": [10, 25088]},
+      "output_shapes": {"output": [10, 4096]}
+    },
+    "linear_relu_dropout_4096x4096": {
+      "id": "linear_relu_dropout_4096x4096",
+      "name": "Linear(4096,4096)+ReLU+Dropout",
+      "level": "fusion",
+      "path": "level_1_fusion/linear_relu_dropout_4096x4096_fp32.py",
+      "children": ["linear_4096x4096", "relu_cls_b", "dropout_cls_b"],
+      "input_shapes": {"x": [10, 4096]},
+      "output_shapes": {"output": [10, 4096]}
+    },
+    "linear_4096x1000": {
+      "id": "linear_4096x1000",
+      "name": "Linear(4096,1000)",
+      "level": "fusion",
+      "path": "level_1_fusion/linear_4096x1000_fp32.py",
+      "children": ["linear_4096x1000_kernel"],
+      "input_shapes": {"x": [10, 4096]},
+      "output_shapes": {"output": [10, 1000]}
+    },
+    "conv2d_3x64_b1a": {
+      "id": "conv2d_3x64_b1a",
+      "name": "Conv2d(3,64,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_3x64_b1a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 3, 224, 224]},
+      "output_shapes": {"output": [10, 64, 224, 224]}
+    },
+    "relu_b1a": {
+      "id": "relu_b1a",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b1a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 64, 224, 224]},
+      "output_shapes": {"output": [10, 64, 224, 224]}
+    },
+    "conv2d_64x64_b1b": {
+      "id": "conv2d_64x64_b1b",
+      "name": "Conv2d(64,64,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_64x64_b1b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 64, 224, 224]},
+      "output_shapes": {"output": [10, 64, 224, 224]}
+    },
+    "relu_b1b": {
+      "id": "relu_b1b",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b1b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 64, 224, 224]},
+      "output_shapes": {"output": [10, 64, 224, 224]}
+    },
+    "maxpool2d_b1_kernel": {
+      "id": "maxpool2d_b1_kernel",
+      "name": "MaxPool2d(2,2)",
+      "level": "kernel",
+      "path": "level_0_kernel/maxpool2d_b1_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 64, 224, 224]},
+      "output_shapes": {"output": [10, 64, 112, 112]}
+    },
+    "conv2d_64x128_b2a": {
+      "id": "conv2d_64x128_b2a",
+      "name": "Conv2d(64,128,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_64x128_b2a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 64, 112, 112]},
+      "output_shapes": {"output": [10, 128, 112, 112]}
+    },
+    "relu_b2a": {
+      "id": "relu_b2a",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b2a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 128, 112, 112]},
+      "output_shapes": {"output": [10, 128, 112, 112]}
+    },
+    "conv2d_128x128_b2b": {
+      "id": "conv2d_128x128_b2b",
+      "name": "Conv2d(128,128,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_128x128_b2b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 128, 112, 112]},
+      "output_shapes": {"output": [10, 128, 112, 112]}
+    },
+    "relu_b2b": {
+      "id": "relu_b2b",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b2b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 128, 112, 112]},
+      "output_shapes": {"output": [10, 128, 112, 112]}
+    },
+    "maxpool2d_b2_kernel": {
+      "id": "maxpool2d_b2_kernel",
+      "name": "MaxPool2d(2,2)",
+      "level": "kernel",
+      "path": "level_0_kernel/maxpool2d_b2_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 128, 112, 112]},
+      "output_shapes": {"output": [10, 128, 56, 56]}
+    },
+    "conv2d_128x256_b3a": {
+      "id": "conv2d_128x256_b3a",
+      "name": "Conv2d(128,256,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_128x256_b3a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 128, 56, 56]},
+      "output_shapes": {"output": [10, 256, 56, 56]}
+    },
+    "relu_b3a": {
+      "id": "relu_b3a",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b3a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 256, 56, 56]},
+      "output_shapes": {"output": [10, 256, 56, 56]}
+    },
+    "conv2d_256x256_b3b": {
+      "id": "conv2d_256x256_b3b",
+      "name": "Conv2d(256,256,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_256x256_b3b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 256, 56, 56]},
+      "output_shapes": {"output": [10, 256, 56, 56]}
+    },
+    "relu_b3b": {
+      "id": "relu_b3b",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b3b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 256, 56, 56]},
+      "output_shapes": {"output": [10, 256, 56, 56]}
+    },
+    "conv2d_256x256_b3c": {
+      "id": "conv2d_256x256_b3c",
+      "name": "Conv2d(256,256,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_256x256_b3c_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 256, 56, 56]},
+      "output_shapes": {"output": [10, 256, 56, 56]}
+    },
+    "relu_b3c": {
+      "id": "relu_b3c",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b3c_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 256, 56, 56]},
+      "output_shapes": {"output": [10, 256, 56, 56]}
+    },
+    "maxpool2d_b3_kernel": {
+      "id": "maxpool2d_b3_kernel",
+      "name": "MaxPool2d(2,2)",
+      "level": "kernel",
+      "path": "level_0_kernel/maxpool2d_b3_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 256, 56, 56]},
+      "output_shapes": {"output": [10, 256, 28, 28]}
+    },
+    "conv2d_256x512_b4a": {
+      "id": "conv2d_256x512_b4a",
+      "name": "Conv2d(256,512,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_256x512_b4a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 256, 28, 28]},
+      "output_shapes": {"output": [10, 512, 28, 28]}
+    },
+    "relu_b4a": {
+      "id": "relu_b4a",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b4a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 28, 28]},
+      "output_shapes": {"output": [10, 512, 28, 28]}
+    },
+    "conv2d_512x512_b4b": {
+      "id": "conv2d_512x512_b4b",
+      "name": "Conv2d(512,512,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_512x512_b4b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 28, 28]},
+      "output_shapes": {"output": [10, 512, 28, 28]}
+    },
+    "relu_b4b": {
+      "id": "relu_b4b",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b4b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 28, 28]},
+      "output_shapes": {"output": [10, 512, 28, 28]}
+    },
+    "conv2d_512x512_b4c": {
+      "id": "conv2d_512x512_b4c",
+      "name": "Conv2d(512,512,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_512x512_b4c_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 28, 28]},
+      "output_shapes": {"output": [10, 512, 28, 28]}
+    },
+    "relu_b4c": {
+      "id": "relu_b4c",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b4c_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 28, 28]},
+      "output_shapes": {"output": [10, 512, 28, 28]}
+    },
+    "maxpool2d_b4_kernel": {
+      "id": "maxpool2d_b4_kernel",
+      "name": "MaxPool2d(2,2)",
+      "level": "kernel",
+      "path": "level_0_kernel/maxpool2d_b4_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 28, 28]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "conv2d_512x512_b5a": {
+      "id": "conv2d_512x512_b5a",
+      "name": "Conv2d(512,512,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_512x512_b5a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "relu_b5a": {
+      "id": "relu_b5a",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b5a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "conv2d_512x512_b5b": {
+      "id": "conv2d_512x512_b5b",
+      "name": "Conv2d(512,512,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_512x512_b5b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "relu_b5b": {
+      "id": "relu_b5b",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b5b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "conv2d_512x512_b5c": {
+      "id": "conv2d_512x512_b5c",
+      "name": "Conv2d(512,512,3,padding=1)",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d_512x512_b5c_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "relu_b5c": {
+      "id": "relu_b5c",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_b5c_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 14, 14]}
+    },
+    "maxpool2d_b5_kernel": {
+      "id": "maxpool2d_b5_kernel",
+      "name": "MaxPool2d(2,2)",
+      "level": "kernel",
+      "path": "level_0_kernel/maxpool2d_b5_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 512, 14, 14]},
+      "output_shapes": {"output": [10, 512, 7, 7]}
+    },
+    "linear_25088x4096": {
+      "id": "linear_25088x4096",
+      "name": "Linear(25088,4096)",
+      "level": "kernel",
+      "path": "level_0_kernel/linear_25088x4096_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 25088]},
+      "output_shapes": {"output": [10, 4096]}
+    },
+    "relu_cls_a": {
+      "id": "relu_cls_a",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_cls_a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 4096]},
+      "output_shapes": {"output": [10, 4096]}
+    },
+    "dropout_cls_a": {
+      "id": "dropout_cls_a",
+      "name": "Dropout(p=0.0)",
+      "level": "kernel",
+      "path": "level_0_kernel/dropout_cls_a_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 4096]},
+      "output_shapes": {"output": [10, 4096]}
+    },
+    "linear_4096x4096": {
+      "id": "linear_4096x4096",
+      "name": "Linear(4096,4096)",
+      "level": "kernel",
+      "path": "level_0_kernel/linear_4096x4096_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 4096]},
+      "output_shapes": {"output": [10, 4096]}
+    },
+    "relu_cls_b": {
+      "id": "relu_cls_b",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu_cls_b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 4096]},
+      "output_shapes": {"output": [10, 4096]}
+    },
+    "dropout_cls_b": {
+      "id": "dropout_cls_b",
+      "name": "Dropout(p=0.0)",
+      "level": "kernel",
+      "path": "level_0_kernel/dropout_cls_b_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 4096]},
+      "output_shapes": {"output": [10, 4096]}
+    },
+    "linear_4096x1000_kernel": {
+      "id": "linear_4096x1000_kernel",
+      "name": "Linear(4096,1000)",
+      "level": "kernel",
+      "path": "level_0_kernel/linear_4096x1000_fp32.py",
+      "children": [],
+      "input_shapes": {"x": [10, 4096]},
+      "output_shapes": {"output": [10, 1000]}
+    }
+  },
+  "data_flow": [
+    {"from": "root", "to": "features_block_1", "tensor_name": "x", "shape": [10, 3, 224, 224], "dtype": "float32"},
+    {"from": "features_block_1", "to": "features_block_2", "tensor_name": "x", "shape": [10, 64, 112, 112], "dtype": "float32"},
+    {"from": "features_block_2", "to": "features_block_3", "tensor_name": "x", "shape": [10, 128, 56, 56], "dtype": "float32"},
+    {"from": "features_block_3", "to": "features_block_4", "tensor_name": "x", "shape": [10, 256, 28, 28], "dtype": "float32"},
+    {"from": "features_block_4", "to": "features_block_5", "tensor_name": "x", "shape": [10, 512, 14, 14], "dtype": "float32"},
+    {"from": "features_block_5", "to": "flatten", "tensor_name": "x", "shape": [10, 512, 7, 7], "dtype": "float32"},
+    {"from": "flatten", "to": "classifier", "tensor_name": "x", "shape": [10, 25088], "dtype": "float32"},
+    {"from": "classifier", "to": "output", "tensor_name": "x", "shape": [10, 1000], "dtype": "float32"}
+  ]
+}

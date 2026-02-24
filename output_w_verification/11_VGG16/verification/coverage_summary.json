@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-02-24T15:24:14.406088",
+  "model_file": "data\\kernelbench\\level3\\11_VGG16.py",
+  "status": "PARTIAL_COVERAGE",
+  "extraction_method": "torch.fx.symbolic_trace",
+  "extraction_warnings": [],
+  "extraction_errors": [],
+  "decomposed_ops_count": 38,
+  "coverage": {
+    "total_original_ops": 39,
+    "total_decomposed_ops": 38,
+    "covered_op_count": 38,
+    "missing_op_types": [
+      "flatten"
+    ],
+    "extra_op_types": [],
+    "coverage_pct": 97.4,
+    "op_details": [
+      {
+        "op_type": "Conv2d",
+        "original_count": 13,
+        "decomposed_count": 13,
+        "status": "covered"
+      },
+      {
+        "op_type": "Dropout",
+        "original_count": 2,
+        "decomposed_count": 2,
+        "status": "covered"
+      },
+      {
+        "op_type": "Linear",
+        "original_count": 3,
+        "decomposed_count": 3,
+        "status": "covered"
+      },
+      {
+        "op_type": "MaxPool2d",
+        "original_count": 5,
+        "decomposed_count": 5,
+        "status": "covered"
+      },
+      {
+        "op_type": "ReLU",
+        "original_count": 15,
+        "decomposed_count": 15,
+        "status": "covered"
+      },
+      {
+        "op_type": "flatten",
+        "original_count": 1,
+        "decomposed_count": 0,
+        "status": "missing"
+      }
+    ]
+  },
+  "original_ops_summary": {
+    "Conv2d": 13,
+    "ReLU": 15,
+    "MaxPool2d": 5,
+    "flatten": 1,
+    "Linear": 3,
+    "Dropout": 2
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-02-24T15:14:45.479594",
+  "original_file": "output\\level3\\11_VGG16\\steps\\step_3_conv_relu_128x128_to_kernels\\original.py",
+  "refactored_file": "output\\level3\\11_VGG16\\steps\\step_3_conv_relu_128x128_to_kernels\\refactored.py",
+  "status": "PASS",
+  "anticheat": {
+    "status": "PASS",
+    "violations": [],
+    "source_violations": [],
+    "parameter_violations": []
+  },
+  "weight_transfer": {
+    "status": "OK",
+    "mapped_count": 2,
+    "unmapped_original": [],
+    "unmapped_refactored": [],
+    "weight_map": {
+      "conv.weight": "conv2d.op.weight",
+      "conv.bias": "conv2d.op.bias"
+    }
+  },
+  "numerical_comparison": {
+    "status": "PASS",
+    "rtol": 1e-05,
+    "atol": 1e-06,
+    "input_dtype": "torch.float32",
+    "num_trials": 3,
+    "max_diff_across_trials": 0.0,
+    "trials": [
+      {
+        "trial": 0,
+        "seed": 42,
+        "max_diff": 0.0,
+        "pass": true,
+        "output_details": [
+          {
+            "output_idx": 0,
+            "shape_match": true,
+            "shape": [
+              10,
+              128,
+              112,
+              112
+            ],
+            "dtype": "torch.float32",
+            "max_diff": 0.0,
+            "mean_diff": 0.0,
+            "matches": true
+          }
+        ]
+      },
+      {
+        "trial": 1,
+        "seed": 43,
+        "max_diff": 0.0,
+        "pass": true,
+        "output_details": [
+          {
+            "output_idx": 0,
+            "shape_match": true,
+            "shape": [
+              10,
+              128,
+              112,
+              112
+            ],
+            "dtype": "torch.float32",
+            "max_diff": 0.0,
+            "mean_diff": 0.0,
+            "matches": true
+          }
+        ]
+      },
+      {
+        "trial": 2,
+        "seed": 44,
+        "max_diff": 0.0,
+        "pass": true,
+        "output_details": [
+          {
+            "output_idx": 0,
+            "shape_match": true,
+            "shape": [
+              10,
+              128,
+              112,
+              112
+            ],
+            "dtype": "torch.float32",
+            "max_diff": 0.0,
+            "mean_diff": 0.0,
+            "matches": true
+          }
+        ]
+      }
+    ]
+  }
+}
