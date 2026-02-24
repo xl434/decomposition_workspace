@@ -1,204 +1,102 @@
 # Agent Prompt Template
 
-Use this template when asking an AI agent to decompose a model.
+Copy the prompt below, edit the single `[EDIT]` block at the top to specify your model(s) and output directory, then paste into your LLM agent.
 
 ---
 
-## Template
+## Prompt (copy this)
 
 ```
-I need you to hierarchically decompose a PyTorch model into unit tests.
+I need you to hierarchically decompose a PyTorch model into unit tests,
+one level at a time with verification at each step.
+
+## ──── [EDIT THIS SECTION] ────────────────────────────────────────────
+
+Model to decompose:   decomposition_workspace/data/kernelbench/level3/11_VGG16.py
+Output directory:     decomposition_workspace/output/level3/11_VGG16/
+
+## ──────────────────────────────────────────────────────────────────────
 
 ## Instructions
 
-Read and follow the decomposition methodology in:
-decomposition_workspace/prompts/MAIN_PROMPT.md
+Read and follow these files:
+- decomposition_workspace/prompts/MAIN_PROMPT.md (full methodology)
+- decomposition_workspace/prompts/VERIFICATION_GUIDE.md (verification rules)
+- decomposition_workspace/OUTPUT_SCHEMA.md (output structure)
 
-## Verification Guide
+## Protocol: Step-by-Step with Verification Gates
 
-Reference the verification guidelines in:
-decomposition_workspace/prompts/VERIFICATION_GUIDE.md
+Do NOT decompose all levels at once. For each level transition:
 
-## Output Schema
+1. Decompose the current component into next-level children
+2. Create a refactored.py that calls ONLY child modules (no inline computation)
+3. Run verify_step.py — MUST PASS before proceeding to the next level
+4. Repeat until all components reach kernel level (L0)
 
-Read and follow the output organization schema in:
-decomposition_workspace/OUTPUT_SCHEMA.md
+### Round 1: Model -> Layers
+- Create level_2_layer/*.py files
+- Create steps/step_1_model_to_layers/refactored.py
+- Run: python scripts/verify_step.py --original <parent> --refactored <refactored>
+- PASS required before Round 2
 
-## Model to Decompose
+### Round 2: Each Layer -> Fusions
+- Create level_1_fusion/*.py files
+- Create steps/step_2_{layer}_to_fusions/refactored.py for each layer
+- Run verify_step.py for each — ALL must PASS before Round 3
 
-under data/kernelbench/level3 directory, example 2, 4, 11, 14, 18, 28, 29, 38, 39, 41
+### Round 3: Each Fusion -> Kernels
+- Create level_0_kernel/*.py files
+- Create steps/step_3_{fusion}_to_kernels/refactored.py for each fusion
+- Run verify_step.py for each — ALL must PASS
 
-## Output Directory
-
-decomposition_workspace/output/{source_level}/{model_name}/
-
-## Required Deliverables
-
-1. **Architecture Analysis**
-   - Module hierarchy diagram
-   - Data flow with shapes at each step
-   - Classification of abstraction level
-
-2. **Component Files**
-   Create files in the output directory:
-   - level_3_model/{name}.py (if applicable)
-   - level_2_layer/{name}.py (if applicable)
-   - level_1_fusion/{name}.py (if applicable)
-   - level_0_kernel/{name}.py (required - all leaf components)
-
-3. **Decomposition Tree**
-   Create: output/{source_level}/{model_name}/decomposition_tree.json
-
-4. **Verification**
-   Create and run: output/{source_level}/{model_name}/verification/composition_test.py
-   - Must demonstrate that composed kernels match original output
-
-5. **Test Results**
-   Run all component tests and report results
+### Final
+- Run: python scripts/extract_ops.py --model <original> --decomp-dir <output_dir>
+- Create and run verification/composition_test.py
 
 ## Success Criteria
 
+- [ ] Every verify_step.py PASSES (anti-cheat + numerical equivalence)
 - [ ] All component files execute without error (print "PASS")
-- [ ] All shapes are documented and verified
-- [ ] **All dimensions match the original model EXACTLY** — do NOT reduce or simplify batch size, channel counts, hidden dimensions, kernel sizes, sequence lengths, or any other parameter. Use the exact values from the original model's declarations, `get_inputs()`, and `get_init_inputs()`
-- [ ] composition_test.py PASSES (max_diff < 1e-4)
+- [ ] Final composition_test.py PASSES
+- [ ] All dimensions match the original model EXACTLY
+- [ ] Every leaf node is kernel level (single operation)
 - [ ] decomposition_tree.json is complete
-- [ ] Every leaf node is at kernel level (single operation)
-- [ ] No abstraction levels are skipped
 
 Begin decomposition:
 ```
 
 ---
 
-## Example: Simple Transformer
+## Examples of the [EDIT] section
 
+**Single KernelBench model:**
 ```
-I need you to hierarchically decompose a PyTorch model into unit tests.
-
-## Instructions
-
-Read and follow the decomposition methodology in:
-decomposition_workspace/prompts/MAIN_PROMPT.md
-
-## Model to Decompose
-
-```python
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import math
-
-class Model(nn.Module):
-    def __init__(self, hidden_dim=768, num_heads=12, mlp_ratio=4):
-        super().__init__()
-        self.hidden_dim = hidden_dim
-        self.num_heads = num_heads
-        self.head_dim = hidden_dim // num_heads
-        self.mlp_dim = hidden_dim * mlp_ratio
-
-        self.norm1 = nn.LayerNorm(hidden_dim)
-        self.qkv = nn.Linear(hidden_dim, 3 * hidden_dim)
-        self.proj = nn.Linear(hidden_dim, hidden_dim)
-
-        self.norm2 = nn.LayerNorm(hidden_dim)
-        self.fc1 = nn.Linear(hidden_dim, self.mlp_dim)
-        self.fc2 = nn.Linear(self.mlp_dim, hidden_dim)
-
-    def forward(self, x):
-        batch, seq_len, _ = x.shape
-
-        # Attention
-        residual = x
-        x = self.norm1(x)
-        qkv = self.qkv(x)
-        qkv = qkv.reshape(batch, seq_len, 3, self.num_heads, self.head_dim)
-        qkv = qkv.permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]
-        scale = 1.0 / math.sqrt(self.head_dim)
-        attn = torch.matmul(q, k.transpose(-2, -1)) * scale
-        attn = F.softmax(attn, dim=-1)
-        x = torch.matmul(attn, v)
-        x = x.transpose(1, 2).reshape(batch, seq_len, self.hidden_dim)
-        x = self.proj(x)
-        x = x + residual
-
-        # MLP
-        residual = x
-        x = self.norm2(x)
-        x = self.fc1(x)
-        x = F.gelu(x)
-        x = self.fc2(x)
-        x = x + residual
-
-        return x
-
-def get_inputs():
-    return [torch.randn(2, 32, 768)]
-
-def get_init_inputs():
-    return []
+Model to decompose:   decomposition_workspace/data/kernelbench/level3/11_VGG16.py
+Output directory:     decomposition_workspace/output/level3/11_VGG16/
 ```
 
-## Output Directory
+**Multiple models (agent works through them one by one):**
+```
+Models to decompose (under data/kernelbench/level3/):
+  - 11_VGG16.py
+  - 14_DenseNet121.py
+  - 18_SqueezeNet.py
+Output directory:     decomposition_workspace/output/level3/{model_name}/
+```
 
-decomposition_workspace/output/level2/simple_transformer/
-
-## Required Deliverables
-
-1. Architecture analysis with shapes
-2. Component files at each level
-3. decomposition_tree.json
-4. verification/composition_test.py that PASSES
-5. Test results showing all components pass
-
-Begin decomposition:
+**Custom model:**
+```
+Model to decompose:   decomposition_workspace/my_models/custom_unet.py
+Output directory:     decomposition_workspace/output/level3/custom_unet/
 ```
 
 ---
 
-## Example: Using KernelBench Model
+## Available Models
 
-```
-I need you to hierarchically decompose a PyTorch model from KernelBench.
-
-## Instructions
-
-Read and follow the decomposition methodology in:
-decomposition_workspace/prompts/MAIN_PROMPT.md
-
-## Model Location
-
-KernelBench/KernelBench/level3/gpt_oss.py
-
-Please read this file and extract the core Model class for decomposition.
-Note: The model has external dependencies - create self-contained components.
-
-## Output Directory
-
-decomposition_workspace/output/level3/gpt_oss/
-
-## Required Deliverables
-
-1. Architecture analysis with shapes
-2. Component files at each level
-3. decomposition_tree.json
-4. verification/composition_test.py that PASSES
-5. Test results showing all components pass
-
-Begin decomposition:
-```
-
----
-
-## Tips for Better Results
-
-1. **Be specific about output location** - Tell the agent exactly where to write files
-
-2. **Request verification explicitly** - Ask for composition_test.py that passes
-
-3. **Provide full context** - Include the prompt file path so agent can read it
-
-4. **Iterate on failures** - If verification fails, ask agent to debug and fix
-
-5. **Start simple** - Test with mlp_block.py before trying gpt_oss.py
+### KernelBench Dataset (`data/kernelbench/`)
+| Level | Count | Description | Example |
+|-------|-------|-------------|---------|
+| level1 | 100 | Atomic ops (already kernel-level) | `19_ReLU.py` |
+| level2 | 100 | Fused ops (2-5 operations) | `conv_bn_relu.py` |
+| level3 | 51 | Full models | `11_VGG16.py`, `gpt_oss.py` |

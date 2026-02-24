@@ -63,6 +63,84 @@ def test_component(component_path: Path, timeout: int = 60) -> Tuple[bool, str]:
         return False, str(e)[:100]
 
 
+def test_step_verification(model_dir: Path, verbose: bool = False) -> Dict:
+    """Test step-by-step verification results if they exist."""
+    steps_dir = model_dir / "steps"
+    result = {
+        "has_steps": steps_dir.exists(),
+        "total_steps": 0,
+        "passed_steps": 0,
+        "failed_steps": 0,
+        "step_details": [],
+    }
+
+    if not steps_dir.exists():
+        return result
+
+    for step_dir in sorted(steps_dir.iterdir()):
+        if not step_dir.is_dir() or not step_dir.name.startswith("step_"):
+            continue
+
+        result["total_steps"] += 1
+        verification_file = step_dir / "verification_result.json"
+
+        if verification_file.exists():
+            try:
+                with open(verification_file, encoding="utf-8") as f:
+                    step_result = json.load(f)
+                status = step_result.get("status", "UNKNOWN")
+                max_diff = step_result.get("numerical_comparison", {}).get(
+                    "max_diff_across_trials"
+                )
+            except Exception:
+                status = "READ_ERROR"
+                max_diff = None
+        else:
+            # Try running verify_step.py if original.py and refactored.py exist
+            original = step_dir / "original.py"
+            refactored = step_dir / "refactored.py"
+            if original.exists() and refactored.exists():
+                try:
+                    proc = subprocess.run(
+                        [sys.executable, str(Path(__file__).parent / "verify_step.py"),
+                         "--original", str(original),
+                         "--refactored", str(refactored),
+                         "--output", str(verification_file)],
+                        capture_output=True,
+                        text=True,
+                        timeout=300,
+                    )
+                    status = "PASS" if proc.returncode == 0 else "FAIL"
+                    max_diff = None
+                    if verification_file.exists():
+                        with open(verification_file, encoding="utf-8") as f:
+                            step_result = json.load(f)
+                        status = step_result.get("status", status)
+                        max_diff = step_result.get("numerical_comparison", {}).get(
+                            "max_diff_across_trials"
+                        )
+                except Exception as e:
+                    status = "ERROR"
+                    max_diff = None
+            else:
+                status = "MISSING_FILES"
+                max_diff = None
+
+        if status == "PASS":
+            result["passed_steps"] += 1
+        else:
+            result["failed_steps"] += 1
+
+        detail = {"step": step_dir.name, "status": status, "max_diff": max_diff}
+        result["step_details"].append(detail)
+
+        if verbose:
+            diff_str = f", max_diff={max_diff:.2e}" if max_diff is not None else ""
+            print(f"    Step {step_dir.name}: {status}{diff_str}")
+
+    return result
+
+
 def test_decomposition(model_dir: Path, verbose: bool = False) -> Dict:
     """Test a complete decomposition."""
     result = {
@@ -73,6 +151,7 @@ def test_decomposition(model_dir: Path, verbose: bool = False) -> Dict:
         "components_passed": 0,
         "components_failed": 0,
         "composition_test": None,
+        "step_verification": None,
         "status": "UNKNOWN",
         "errors": [],
     }
@@ -112,10 +191,19 @@ def test_decomposition(model_dir: Path, verbose: bool = False) -> Dict:
     else:
         result["composition_test"] = "NOT_FOUND"
 
+    # Test step-by-step verification
+    step_result = test_step_verification(model_dir, verbose)
+    result["step_verification"] = step_result
+
     # Determine overall status
-    if result["components_failed"] == 0 and result["composition_test"] == "PASS":
+    steps_ok = (not step_result["has_steps"]
+                or step_result["failed_steps"] == 0)
+    components_ok = result["components_failed"] == 0
+    composition_ok = result["composition_test"] == "PASS"
+
+    if components_ok and composition_ok and steps_ok:
         result["status"] = "PASSED"
-    elif result["components_failed"] == 0:
+    elif components_ok and steps_ok:
         result["status"] = "PARTIAL"  # Components pass but no composition test
     else:
         result["status"] = "FAILED"
@@ -180,14 +268,19 @@ def main():
         result = test_decomposition(model_dir, args.verbose)
         results.append(result)
 
+        step_info = ""
+        sv = result.get("step_verification", {})
+        if sv and sv.get("has_steps"):
+            step_info = f" [steps: {sv['passed_steps']}/{sv['total_steps']} passed]"
+
         if result["status"] == "PASSED":
-            print("PASSED")
+            print(f"PASSED{step_info}")
             passed += 1
         elif result["status"] == "PARTIAL":
-            print(f"PARTIAL ({result['components_passed']}/{result['components_tested']} components)")
+            print(f"PARTIAL ({result['components_passed']}/{result['components_tested']} components){step_info}")
             partial += 1
         else:
-            print(f"FAILED ({result['components_failed']} failures)")
+            print(f"FAILED ({result['components_failed']} failures){step_info}")
             failed += 1
 
     # Summary

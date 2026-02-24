@@ -23,9 +23,23 @@ output/
 │       │   ├── {kernel_name}_0.py
 │       │   ├── {kernel_name}_1.py
 │       │   └── ...
+│       ├── steps/                     # Step-by-step intermediate results
+│       │   ├── step_1_model_to_layers/
+│       │   │   ├── original.py       # Copy of parent component
+│       │   │   ├── refactored.py     # Parent rewritten with child calls ONLY
+│       │   │   ├── children/         # Child component files
+│       │   │   ├── weight_map.json   # Optional explicit param mapping
+│       │   │   ├── verification_result.json  # verify_step.py output
+│       │   │   └── coverage_report.json      # extract_ops.py output
+│       │   ├── step_2_{layer}_to_fusions/
+│       │   │   └── (same structure)
+│       │   └── step_3_{fusion}_to_kernels/
+│       │       └── (same structure)
 │       └── verification/              # Verification tests
 │           ├── composition_test.py
-│           └── test_results.json
+│           ├── test_results.json
+│           ├── step_verification_summary.json  # Aggregated step results
+│           └── coverage_summary.json           # Full coverage report
 ```
 
 ## Naming Conventions
@@ -228,5 +242,110 @@ output/level3/gpt_oss/
 │   └── ...
 └── verification/
     ├── composition_test.py
-    └── test_results.json
+    ├── test_results.json
+    ├── step_verification_summary.json
+    └── coverage_summary.json
+```
+
+## Steps Directory Schema
+
+Each decomposition step saves intermediate results for verification.
+
+### Step Directory Structure
+```
+steps/step_{N}_{component_name}/
+  original.py              # Copy of parent component being decomposed
+  refactored.py            # Parent rewritten using ONLY child module calls
+  children/                # Child component files for this step
+    child_0.py
+    child_1.py
+  weight_map.json          # Optional: explicit parameter name mapping
+  verification_result.json # Output of scripts/verify_step.py
+  coverage_report.json     # Output of scripts/extract_ops.py
+```
+
+### Refactored Code Constraints
+
+The `refactored.py` file MUST follow these anti-cheat rules:
+1. All `nn.Parameter`s must belong to child submodules (no standalone weights)
+2. `forward()` may ONLY contain:
+   - Child module calls: `self.child_a(x)`
+   - Data plumbing: `x + residual`, `torch.cat(...)`, `torch.split(...)`
+   - Shape ops: `x.reshape(...)`, `x.permute(...)`, `x.view(...)`
+   - Indexing: `x[:, 0]`, `q, k, v = x.chunk(3)`
+3. `forward()` must NOT contain: `F.relu`, `F.softmax`, `torch.matmul`, `nn.Linear`, or any other compute ops
+
+### verification_result.json Schema
+```json
+{
+  "timestamp": "2026-02-20T10:00:00",
+  "original_file": "steps/step_1/original.py",
+  "refactored_file": "steps/step_1/refactored.py",
+  "status": "PASS",
+  "anticheat": {
+    "status": "PASS",
+    "source_violations": [],
+    "parameter_violations": []
+  },
+  "weight_transfer": {
+    "status": "OK",
+    "mapped_count": 10,
+    "unmapped_original": [],
+    "unmapped_refactored": []
+  },
+  "numerical_comparison": {
+    "status": "PASS",
+    "rtol": 1e-5,
+    "atol": 1e-6,
+    "input_dtype": "torch.float32",
+    "num_trials": 3,
+    "max_diff_across_trials": 2.384e-07,
+    "trials": [
+      {"trial": 0, "seed": 42, "max_diff": 2.384e-07, "pass": true}
+    ]
+  }
+}
+```
+
+### coverage_report.json Schema
+```json
+{
+  "timestamp": "2026-02-20T10:00:00",
+  "model_file": "steps/step_1/original.py",
+  "status": "FULL_COVERAGE",
+  "extraction_method": "torch.fx.symbolic_trace",
+  "coverage": {
+    "total_original_ops": 5,
+    "total_decomposed_ops": 5,
+    "covered_op_count": 5,
+    "coverage_pct": 100.0,
+    "missing_op_types": [],
+    "extra_op_types": [],
+    "op_details": [
+      {"op_type": "Conv2d", "original_count": 2, "decomposed_count": 2, "status": "covered"}
+    ]
+  }
+}
+```
+
+### step_verification_summary.json Schema
+```json
+{
+  "timestamp": "2026-02-20T10:05:00",
+  "decomp_dir": "output/level3/11_VGG16/",
+  "status": "PASS",
+  "total_steps": 15,
+  "passed": 15,
+  "failed": 0,
+  "skipped": 0,
+  "steps": [
+    {
+      "step_name": "step_1_model_to_layers",
+      "verification_status": "PASS",
+      "coverage_pct": 100.0,
+      "max_diff": 2.384e-07,
+      "anticheat_status": "PASS"
+    }
+  ]
+}
 ```

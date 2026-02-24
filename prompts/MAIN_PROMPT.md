@@ -85,9 +85,15 @@ For the CURRENT level, identify what to extract at the NEXT level down:
 
 ---
 
-## Phase 2: Decomposition
+## Phase 2: Step-by-Step Decomposition with Verification Gates
 
-### Step 2.1: Extract Components with Shape Tracking
+**CRITICAL: Decompose ONE level at a time. Verify EACH step before proceeding.**
+
+Do NOT decompose all levels at once. Follow this iterative loop for each level transition.
+
+### Step 2.1: Decompose to Next Level
+
+For the CURRENT component, identify children at the next level down and create a file for each child component following the standard template (see Component File Format below).
 
 For each component, track:
 1. **Input shapes** - exact tensor dimensions entering this component
@@ -95,41 +101,134 @@ For each component, track:
 3. **Intermediate shapes** - shapes at each step within the component
 4. **Weight shapes** - dimensions of any learnable parameters
 
-Create a **Component Specification**:
+### Step 2.2: Create Refactored Code
 
+For each component you decompose, create a **refactored version** that replaces inline computation with calls to the child modules you extracted. Save this as `steps/step_N_name/refactored.py`.
+
+**Anti-Cheat Rules for Refactored Code:**
+
+The refactored `forward()` may ONLY contain:
+
+| Allowed (data plumbing) | Disallowed (must be in child module) |
+|---|---|
+| `self.child_module(x)` — child calls | `nn.Linear(...)`, `nn.Conv2d(...)` — module construction |
+| `x + residual`, `x * scale` — arithmetic | `F.linear(...)`, `F.softmax(...)` — functional compute |
+| `torch.cat(...)`, `torch.split(...)` — assembly | `torch.matmul(...)`, `torch.bmm(...)` — compute ops |
+| `x.reshape(...)`, `x.permute(...)` — shape ops | `F.gelu(...)`, `F.relu(...)` — activations |
+| `x.transpose(...)`, `x.view(...)` — shape ops | `F.layer_norm(...)`, `F.batch_norm(...)` — norms |
+| `x[:, :, 0]` — indexing/slicing | Any `nn.Module` not imported from children |
+
+**All parameters must belong to child submodules.** No standalone `nn.Linear`, `nn.Conv2d`, etc. in the refactored model.
+
+**Example — VGG Block decomposed to fusions:**
+
+Original `features_block_1.py`:
 ```python
-# Component: attention_block
-# Parent: transformer_layer_0
-# Level: fusion (L1)
-#
-# Inputs:
-#   x: [batch=2, seq=32, hidden=768] dtype=float32
-#
-# Weights:
-#   qkv_proj.weight: [2304, 768]  # 3*768=2304
-#   qkv_proj.bias: [2304]
-#   out_proj.weight: [768, 768]
-#   out_proj.bias: [768]
-#
-# Internal Flow:
-#   x [2, 32, 768]
-#   → qkv_proj [2, 32, 2304]
-#   → reshape [2, 32, 3, 12, 64]  # 3 for q,k,v; 12 heads; 64 head_dim
-#   → permute [3, 2, 12, 32, 64]  # separate q,k,v
-#   → q,k,v each [2, 12, 32, 64]
-#   → attention scores [2, 12, 32, 32]
-#   → softmax [2, 12, 32, 32]
-#   → weighted sum [2, 12, 32, 64]
-#   → reshape [2, 32, 768]
-#   → out_proj [2, 32, 768]
-#
-# Output:
-#   output: [2, 32, 768] dtype=float32
+class Model(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+        )
+    def forward(self, x):
+        return self.block(x)
 ```
 
-### Step 2.2: Generate Component Files
+Refactored `steps/step_2_block1_to_fusions/refactored.py`:
+```python
+sys.path.insert(0, str(Path(__file__).parent / "children"))
+from conv_relu_3x64 import Model as ConvRelu1
+from conv_relu_64x64 import Model as ConvRelu2
+from maxpool2d import Model as MaxPool
 
-Each file MUST follow this exact format:
+class RefactoredModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv_relu_1 = ConvRelu1()   # child only
+        self.conv_relu_2 = ConvRelu2()   # child only
+        self.maxpool = MaxPool()          # child only
+
+    def forward(self, x):
+        x = self.conv_relu_1(x)          # child call
+        x = self.conv_relu_2(x)          # child call
+        x = self.maxpool(x)              # child call
+        return x
+
+def get_inputs():
+    return [torch.randn(10, 3, 224, 224)]  # same as parent
+```
+
+**Example — Transformer block with residuals:**
+```python
+from children.norm_attention import Model as NormAttention
+from children.norm_mlp import Model as NormMLP
+
+class RefactoredModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.norm_attn = NormAttention()
+        self.norm_mlp = NormMLP()
+
+    def forward(self, x):
+        residual = x                     # data plumbing: allowed
+        x = self.norm_attn(x)            # child call
+        x = x + residual                 # data plumbing: allowed
+        residual = x                     # data plumbing: allowed
+        x = self.norm_mlp(x)             # child call
+        x = x + residual                 # data plumbing: allowed
+        return x
+```
+
+### Step 2.3: Verify This Step (GATE)
+
+Run the standard verification script:
+```bash
+python scripts/verify_step.py \
+    --original path/to/parent.py \
+    --refactored steps/step_N_name/refactored.py \
+    --output steps/step_N_name/verification_result.json
+```
+
+This script automatically:
+1. **Anti-cheat validation** — scans refactored code for disallowed ops and standalone parameters
+2. **Weight transfer** — maps and copies weights from original to refactored model
+3. **Numerical comparison** — runs both on same inputs (3 trials), compares outputs
+
+**You MUST NOT proceed to the next level until this step PASSES.**
+
+If verification fails:
+- Check `verification_result.json` for `max_diff` and trial details
+- Common issues: missing residual connection, wrong op order, missing weight in mapping, dtype mismatch
+- Fix the refactored code or child components and re-run
+
+If the standard script cannot handle your model (special components, unusual architecture), write a custom verification script that replicates the **exact same logic**: same tolerance rules, same weight transfer, same output JSON format, same anti-cheat checks.
+
+### Step 2.4: Coverage Check (Optional but Recommended)
+
+Run coverage analysis:
+```bash
+python scripts/extract_ops.py \
+    --model path/to/parent.py \
+    --children steps/step_N_name/children/*.py \
+    --output steps/step_N_name/coverage_report.json
+```
+
+### Step 2.5: Repeat for Each Child
+
+For each child that is NOT at kernel level (L0), repeat Steps 2.1-2.4.
+
+**Decomposition order:**
+1. Model (L3) → Layers (L2) — verify step
+2. For each Layer: Layer (L2) → Fusions (L1) — verify each step
+3. For each Fusion: Fusion (L1) → Kernels (L0) — verify each step
+
+### Component File Format
+
+Each component file MUST follow this format:
 
 ```python
 """
@@ -142,7 +241,6 @@ Operations: {list of operations performed}
 
 Input Shapes:
   - x: {shape} dtype={dtype}
-  - (additional inputs if any)
 
 Output Shapes:
   - output: {shape} dtype={dtype}
@@ -164,74 +262,44 @@ class Model(nn.Module):
     def __init__(self):
         super().__init__()
         # Initialize with CORRECT shapes for weights
-        # Weights must match input dtype when forward() is called
 
     def forward(self, x):
-        # Ensure weight dtype matches input
-        if hasattr(self, 'linear') and x.dtype != self.linear.weight.dtype:
-            self.linear = self.linear.to(x.dtype)
-
         # Forward pass - MUST match exact computation of original
         return output
 
 def get_inputs():
     """Generate test inputs with EXACT shapes from the ORIGINAL model's get_inputs().
-    DO NOT reduce or modify dimensions — use the original model's exact values."""
-    return [
-        torch.randn(2, 32, 768, dtype=torch.float32),  # Must match original model
-    ]
+    DO NOT reduce or modify dimensions."""
+    return [torch.randn(2, 32, 768, dtype=torch.float32)]
 
 def get_init_inputs():
     """Return initialization parameters."""
     return []
 
-# =============================================================================
-# VERIFICATION SECTION
-# =============================================================================
-
 def get_expected_output_shape():
     """Return expected output shape(s) for verification."""
-    return [(2, 32, 768)]  # List of expected shapes
+    return [(2, 32, 768)]
 
 def run_tests():
     """Verify this component executes correctly."""
     try:
         model = Model(*get_init_inputs())
         model.eval()
-
         with torch.no_grad():
             inputs = get_inputs()
             output = model(*inputs)
-
-            # 1. Basic validation
             assert output is not None, "Output is None"
             assert not torch.isnan(output).any(), "Output contains NaN"
             assert not torch.isinf(output).any(), "Output contains Inf"
-
-            # 2. Shape validation
             expected_shapes = get_expected_output_shape()
-            if isinstance(output, tuple):
-                actual_shapes = [o.shape for o in output]
-            else:
-                actual_shapes = [output.shape]
-
+            actual_shapes = [output.shape] if isinstance(output, torch.Tensor) else [o.shape for o in output]
             for i, (actual, expected) in enumerate(zip(actual_shapes, expected_shapes)):
                 assert tuple(actual) == tuple(expected), \
                     f"Output {i} shape mismatch: got {actual}, expected {expected}"
-
-            # 3. Dtype validation
-            expected_dtype = inputs[0].dtype
-            if isinstance(output, tuple):
-                for o in output:
-                    assert o.dtype == expected_dtype, f"Dtype mismatch: {o.dtype} vs {expected_dtype}"
-            else:
-                assert output.dtype == expected_dtype, f"Dtype mismatch: {output.dtype} vs {expected_dtype}"
-
             print(f"Input shape(s): {[x.shape for x in inputs]}")
             print(f"Output shape(s): {actual_shapes}")
             print("PASS")
             return True
-
     except Exception as e:
         print(f"FAIL: {e}")
         import traceback
@@ -245,34 +313,50 @@ if __name__ == "__main__":
 
 ---
 
-## Phase 3: Verification Protocol
+## Phase 3: Final Verification (End-to-End Double-Check)
 
-### Step 3.1: Individual Component Verification
+**Purpose**: The step-by-step verification in Phase 2 is the primary correctness guarantee — each level transition is proven equivalent with shared weights. Phase 3 provides an **independent end-to-end double-check**: build a single model from ONLY L0 kernel components and verify it matches the original. This serves as:
 
-For EACH generated component, verify:
+1. **Independent proof** — does not rely on step results; anyone can run it standalone
+2. **Transitive chain validation** — catches any subtle issue that step-level verification might miss (e.g., weight mapping errors that happen to cancel out at one level but compound across levels)
+3. **Standalone artifact** — a single file that proves the decomposition is correct, runnable without understanding the step-by-step flow
 
-1. **Execution Test**: `python {component}.py` runs without error
-2. **Shape Test**: Output shapes match specification
-3. **Dtype Test**: Output dtype matches input dtype
-4. **NaN/Inf Test**: No numerical issues
+### Step 3.1: End-to-End Composition Test (REQUIRED)
 
-### Step 3.2: Composition Verification (CRITICAL)
+Create **verification/composition_test.py** that:
+1. Imports the **original model**
+2. Imports **all kernel-level (L0) components** from `level_0_kernel/`
+3. Builds a `ComposedModel` that chains all L0 kernels in the correct order to recreate the full computation (following the data flow from `decomposition_tree.json`)
+4. Transfers weights from original → composed model
+5. Compares outputs: `torch.allclose(original_output, composed_output, rtol=1e-4, atol=1e-5)`
 
-This is the key verification step - prove that the decomposition is correct by recomposing.
+The `ComposedModel.forward()` follows the same anti-cheat rules as refactored code — it should ONLY call kernel child modules plus data plumbing (residual adds, reshape, cat, etc.).
 
-Create a **verification/composition_test.py** file that:
-1. Imports the original model
-2. Imports all decomposed components
-3. Composes the components in the same order as the original
-4. Compares outputs: `torch.allclose(original, composed, rtol=1e-4, atol=1e-5)`
+```bash
+python {output_dir}/verification/composition_test.py
+# Must print PASS
+```
 
-### Step 3.3: Shape Flow Verification
+### Step 3.2: Coverage Summary
 
-Create a **verification/shape_flow_test.py** that traces tensor shapes through the decomposition.
+Run full coverage analysis comparing original model ops against **leaf-level (L0 kernel) components only**. Do NOT count ops from L1/L2 components — they contain the same ops nested inside them and would inflate the count.
 
-### Step 3.4: Operation Coverage Verification
+```bash
+python scripts/extract_ops.py \
+    --model {original_model.py} \
+    --decomp-dir {output_dir}/ \
+    --output {output_dir}/verification/coverage_summary.json
+```
 
-Ensure every operation from the original appears in exactly one kernel-level component.
+> **Note**: `--decomp-dir` scans only `level_0_kernel/` to avoid double/triple-counting ops that appear at multiple hierarchy levels. If you need per-step coverage, use `--children` with explicit file paths instead.
+
+### Step 3.3: Step Pipeline Summary (optional, for CI/human review)
+
+Re-validate all steps and aggregate results:
+```bash
+python scripts/run_step_pipeline.py {output_dir}/
+```
+This is redundant if the agent already ran `verify_step.py` at each step in Phase 2. It exists for post-hoc validation by humans or CI systems.
 
 ---
 
@@ -294,10 +378,21 @@ Ensure every operation from the original appears in exactly one kernel-level com
 │   ├── linear_qkv.py
 │   ├── layer_norm.py
 │   └── ...
+├── steps/
+│   ├── step_1_model_to_layers/
+│   │   ├── original.py
+│   │   ├── refactored.py
+│   │   ├── children/
+│   │   ├── verification_result.json
+│   │   └── coverage_report.json
+│   ├── step_2_{layer}_to_fusions/
+│   │   └── ...
+│   └── step_3_{fusion}_to_kernels/
+│       └── ...
 ├── verification/
 │   ├── composition_test.py
-│   ├── shape_flow_test.py
-│   └── operation_coverage.py
+│   ├── step_verification_summary.json
+│   └── coverage_summary.json
 ├── decomposition_tree.json
 └── decomposition_analysis.md
 ```
@@ -313,14 +408,18 @@ Ensure every operation from the original appears in exactly one kernel-level com
 4. Invent operations not in the original
 5. Generate files that don't execute
 6. **Modify, reduce, or simplify the dimensions declared in the original model** — Do NOT shrink batch size, channel counts, hidden dimensions, sequence lengths, or any other parameter for "faster testing". Use the EXACT values from the original model's declarations and `get_inputs()`/`get_init_inputs()` functions
+7. **Put compute ops in refactored code** — refactored forward() must ONLY call child modules + data plumbing. No `F.relu`, `torch.matmul`, `nn.Linear`, etc.
+8. **Proceed to the next level before the current step's verify_step.py PASSES**
 
 ### You MUST:
 1. Trace complete data flow with shapes at each step
 2. Preserve all dtypes (float32, bfloat16, etc.)
 3. **Preserve the EXACT dimensions from the original model** — Use the same batch size, channel counts, hidden dimensions, kernel sizes, sequence lengths, and all other parameters as declared in the original model's `__init__()`, `get_inputs()`, and `get_init_inputs()`. Never reduce or simplify dimensions
-4. Create composition_test.py that PASSES
-5. Verify every component executes with correct shapes
-6. Document reasoning for each decomposition decision
+4. **Decompose one level at a time** with verification between each step
+5. **Create refactored.py at each step** and run `verify_step.py` to confirm numerical equivalence
+6. Create final composition_test.py that PASSES
+7. Verify every component executes with correct shapes
+8. Document reasoning for each decomposition decision
 
 ---
 
@@ -328,11 +427,15 @@ Ensure every operation from the original appears in exactly one kernel-level com
 
 Before submitting, verify:
 
-- [ ] All component files execute without error
-- [ ] `composition_test.py` PASSES (composed output matches original)
+- [ ] **Each decomposition step** has a refactored.py with ONLY child module calls
+- [ ] **Each step's verify_step.py PASSES** (numerical equivalence confirmed)
+- [ ] All component files execute without error (print "PASS")
+- [ ] `composition_test.py` PASSES (final composed output matches original)
 - [ ] `decomposition_tree.json` is complete
 - [ ] Every leaf node is at kernel level (L0)
 - [ ] Abstraction level hierarchy is respected (L3 → L2 → L1 → L0)
+- [ ] Coverage analysis shows no missing operations
+- [ ] ALL DIMENSIONS MATCH THE ORIGINAL MODEL EXACTLY
 
 ---
 
@@ -349,9 +452,10 @@ Given the model file below, perform hierarchical decomposition following all gui
 
 Please provide:
 1. **Architecture Analysis** - Module hierarchy and data flow with shapes
-2. **Decomposition Tree** (JSON format)
-3. **All Component Files** - With complete, executable code
-4. **Verification Files** - composition_test.py
-5. **Verification Results** - Confirmation that all tests pass
+2. **Step-by-step decomposition** with refactored.py and verify_step.py results at each level
+3. **Decomposition Tree** (JSON format)
+4. **All Component Files** - With complete, executable code
+5. **Verification Files** - step results + final composition_test.py
+6. **Coverage Report** - extract_ops.py results
 
 Begin your decomposition:
