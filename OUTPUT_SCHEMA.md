@@ -52,26 +52,71 @@ output/
 ### Component File Names
 Format: `{operation}_{shape_signature}_{dtype}.py`
 
+**Each file represents a unique workload**: a specific operation with specific input/output dimensions and dtype. The **file name** encodes the workload identity (operation + shape + dtype), while the **module itself** uses `get_init_inputs()` to pass dimensions — so it's testable with standard `Model(*get_init_inputs())`. The `get_inputs()` function returns tensors with the correct shapes for that specific workload.
+
 Examples:
 ```
-linear_768x3072_fp32.py
-conv2d_3x64x224x224_fp32.py
-layer_norm_768_fp32.py
-softmax_2x12x32x32_fp32.py
-matmul_2x12x32x64_2x12x64x32_fp32.py
+linear_768x3072_fp32.py       # Linear: in=768, out=3072, float32
+linear_3072x768_fp32.py       # Linear: in=3072, out=768 (DIFFERENT workload)
+conv2d_3x768_16x16_fp32.py    # Conv2d: in_ch=3, out_ch=768, kernel=16x16
+layer_norm_768_fp32.py         # LayerNorm: normalized_shape=768
+rms_norm_960_fp32.py           # RMSNorm: hidden_size=960
+softmax_1x12x1024x1024_fp32.py
+matmul_1x12x1024x64_1x12x64x1024_fp32.py
+embedding_49280x960_i64_fp32.py  # Embedding: vocab=49280, dim=960, input=int64, output=float32
+silu_fp32.py                   # Elementwise ops without shape-dependent params
+gelu_fp32.py                   # (shape-independent — one file covers all shapes)
 ```
 
-For complex names, use descriptive prefixes:
-```
-attention_qkv_proj_768x2304_fp32.py
-mlp_up_proj_768x3072_fp32.py
-transformer_block_0_fp32.py
+**Shape signature rules:**
+- Include dimensions that define the workload identity (weight shapes, not batch/sequence)
+- For **parameterized ops** (Linear, Conv2d, Embedding): use parameter dimensions (e.g., `linear_768x3072` = weight shape)
+- For **elementwise ops** (ReLU, SiLU, GELU): omit shape if the op is shape-independent. Use `silu_fp32.py` not `silu_1x50x720_fp32.py`
+- For **reduction ops** with fixed dims (Softmax, LayerNorm): include the relevant dimension
+
+### Kernel Identity & Deduplication
+
+A **unique workload** is defined by: `(operation, parameter_shapes, input_dtype, output_dtype)`.
+
+**Two kernels are the SAME workload** (share one file) if all of these match:
+- Same operation type (e.g., both are Linear)
+- Same parameter shapes (e.g., both have weight [768, 3072])
+- Same input/output dtypes
+
+**Two kernels are DIFFERENT workloads** (separate files) when ANY differs:
+- Different parameter shapes: `linear_768x3072_fp32.py` vs `linear_3072x768_fp32.py`
+- Different dtypes: `linear_768x3072_fp32.py` vs `linear_768x3072_bf16.py`
+- Different operations: `relu_fp32.py` vs `gelu_fp32.py`
+
+**Rules:**
+- **One file per unique workload** — dimensions hardcoded, no shape parameters in `__init__`
+- **No `_2`, `_3` suffixes** — do NOT create `relu_fp32.py` and `relu_fp32_2.py`
+- **Multiple instances import from the same file** — in `refactored.py`, create separate instances with different names
+- Each instance gets its own weights via the weight map, but shares the kernel definition
+
+**Example — kernel file with workload-specific inputs:**
+```python
+# level_0_kernel/linear_768x3072_fp32.py
+class Model(nn.Module):
+    def __init__(self, in_features, out_features):
+        super().__init__()
+        self.linear = nn.Linear(in_features, out_features)
+
+    def forward(self, x):
+        return self.linear(x)
+
+def get_inputs():
+    return [torch.randn(1, 128, 768)]   # input with last dim matching in_features
+
+def get_init_inputs():
+    return [768, 3072]                   # in_features, out_features for this workload
 ```
 
 ### Shape Signature Format
-- Single tensor: `{dim1}x{dim2}x...`
-- Multiple tensors: `{shape1}_{shape2}`
-- Batch dimension: Include if fixed, omit if variable
+- Parameter dimensions: `{dim1}x{dim2}x...` (e.g., `768x3072` for a Linear weight)
+- Multiple parameter groups: separate with `_` (e.g., `matmul_1x12x1024x64_1x12x64x1024`)
+- Batch/sequence dimensions: **omit** from the signature (they don't define the workload)
+- Elementwise ops: omit shape entirely if shape-independent (e.g., `silu_fp32.py`)
 
 ### Data Type Codes
 - `fp32` = float32
@@ -79,6 +124,7 @@ transformer_block_0_fp32.py
 - `bf16` = bfloat16
 - `i64` = int64
 - `i32` = int32
+- For ops with mixed input/output dtypes (e.g., Embedding: int64 in, float32 out), use `{input_dtype}_{output_dtype}` or the output dtype
 
 ## decomposition_tree.json Schema
 
@@ -96,6 +142,7 @@ transformer_block_0_fp32.py
       "fusion": 12,
       "kernel": 25
     },
+    "unique_kernels": 10,
     "verification_status": "PASSED"
   },
   "nodes": {
@@ -109,6 +156,18 @@ transformer_block_0_fp32.py
       "output_shapes": {"logits": [2, 32, 50000]},
       "input_dtypes": {"x": "int64"},
       "output_dtypes": {"logits": "float32"}
+    },
+    "linear_qkv_layer0": {
+      "id": "linear_qkv_layer0",
+      "name": "QKV Projection (layer 0)",
+      "level": "kernel",
+      "path": "level_0_kernel/linear_qkv_2880x5760_bf16.py",
+      "instance_count": 24,
+      "children": [],
+      "input_shapes": {"x": [2, 32, 2880]},
+      "output_shapes": {"out": [2, 32, 5760]},
+      "input_dtypes": {"x": "bfloat16"},
+      "output_dtypes": {"out": "bfloat16"}
     }
   },
   "data_flow": [
@@ -219,32 +278,32 @@ For `data/kernelbench/level3/gpt_oss.py`:
 output/level3/gpt_oss/
 ├── decomposition_tree.json
 ├── decomposition_analysis.md
+├── decomposition_log.json                   # Decision/difficulty log
 ├── level_3_model/
 │   └── gpt_oss.py
 ├── level_2_layer/
-│   ├── transformer_block_0.py
-│   └── transformer_block_1.py
+│   ├── transformer_block.py
+│   └── output_head.py
 ├── level_1_fusion/
-│   ├── attention_block_fp32.py
-│   ├── mlp_block_fp32.py
-│   └── moe_block_fp32.py
-├── level_0_kernel/
-│   ├── embedding_201088x2880_bf16.py
-│   ├── rms_norm_2880_fp32.py
-│   ├── linear_qkv_2880x5760_bf16.py
-│   ├── rotary_embedding_64_bf16.py
-│   ├── sdpa_2x64x32x64_bf16.py
-│   ├── linear_proj_4096x2880_bf16.py
-│   ├── topk_k4_bf16.py
-│   ├── softmax_dim1_bf16.py
-│   ├── swiglu_2880_bf16.py
-│   ├── add_residual_2x32x2880_bf16.py
-│   └── ...
+│   ├── attention_block.py
+│   ├── mlp_block.py
+│   └── moe_block.py
+├── level_0_kernel/                          # Deduplicated: one file per unique WORKLOAD
+│   ├── embedding_201088x2880_bf16.py       # 1 instance (vocab=201088, dim=2880)
+│   ├── rms_norm_2880_fp32.py               # 24 instances (hidden=2880)
+│   ├── linear_2880x5760_bf16.py            # 24 instances (QKV proj)
+│   ├── linear_4096x2880_bf16.py            # 24 instances (down proj)
+│   ├── linear_2880x4096_bf16.py            # 24 instances (up proj - DIFFERENT workload)
+│   ├── rotary_embedding_64_bf16.py         # 24 instances (head_dim=64)
+│   ├── softmax_dim1_bf16.py                # 24 instances
+│   ├── matmul_2x32x64_2x64x32_bf16.py     # 24 instances (attn scores)
+│   ├── silu_bf16.py                        # 24 instances (elementwise, shape-independent)
+│   └── ...                                 # Total: ~10 unique files, ~250 instances
 └── verification/
     ├── composition_test.py
     ├── test_results.json
     ├── step_verification_summary.json
-    └── coverage_summary.json
+    └── coverage_summary.json               # REQUIRED: extract_ops.py output
 ```
 
 ## Steps Directory Schema

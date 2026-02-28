@@ -12,6 +12,7 @@ one level at a time with verification at each step.
 
 ## ──── [EDIT THIS SECTION] ────────────────────────────────────────────
 
+Input type:           single_file
 Model to decompose:   decomposition_workspace/data/kernelbench/level3/11_VGG16.py
 Output directory:     decomposition_workspace/output/level3/11_VGG16/
 
@@ -32,6 +33,15 @@ Do NOT decompose all levels at once. For each level transition:
 2. Create a refactored.py that calls ONLY child modules (no inline computation)
 3. Run verify_step.py — MUST PASS before proceeding to the next level
 4. Repeat until all components reach kernel level (L0)
+
+### Round 0: Model Preparation (huggingface / repo input types only)
+Skip this round if input type is single_file with no externel file dependencies.
+- Follow Phase 0 in MAIN_PROMPT.md
+- Step 0.1: Explore the entry file and trace ALL imports recursively to discover
+  dependencies, config values, forward signature, and input shapes
+- Step 0.2-0.3: Create a self-contained wrapper with hardcoded config
+- Step 0.4: Create steps/step_0_preparation/verify_wrapper.py
+- Run verify_wrapper.py — MUST PASS before Round 1
 
 ### Round 1: Model -> Layers
 - Create level_2_layer/*.py files
@@ -55,6 +65,7 @@ Do NOT decompose all levels at once. For each level transition:
 
 ## Success Criteria
 
+- [ ] Phase 0 verify_wrapper.py PASSES (if applicable)
 - [ ] Every verify_step.py PASSES (anti-cheat + numerical equivalence)
 - [ ] All component files execute without error (print "PASS")
 - [ ] Final composition_test.py PASSES
@@ -69,14 +80,16 @@ Begin decomposition:
 
 ## Examples of the [EDIT] section
 
-**Single KernelBench model:**
+**Single KernelBench model (single_file):**
 ```
+Input type:           single_file
 Model to decompose:   decomposition_workspace/data/kernelbench/level3/11_VGG16.py
 Output directory:     decomposition_workspace/output/level3/11_VGG16/
 ```
 
 **Multiple models (agent works through them one by one):**
 ```
+Input type:           single_file
 Models to decompose (under data/kernelbench/level3/):
   - 11_VGG16.py
   - 14_DenseNet121.py
@@ -84,11 +97,33 @@ Models to decompose (under data/kernelbench/level3/):
 Output directory:     decomposition_workspace/output/level3/{model_name}/
 ```
 
-**Custom model:**
+**Custom model (single_file):**
 ```
+Input type:           single_file
 Model to decompose:   decomposition_workspace/my_models/custom_unet.py
 Output directory:     decomposition_workspace/output/level3/custom_unet/
 ```
+
+**HuggingFace model:**
+```
+Input type:           huggingface
+Model ID or repo:     HuggingFaceTB/SmolVLM-256M-Instruct
+Model class:          SmolVLMForConditionalGeneration
+Output directory:     decomposition_workspace/output/level3/smolvlm/
+```
+
+**Multi-file repo:**
+```
+Input type:           repo
+Repo path:            decomposition_workspace/data/smolvla/
+Entry file:           modeling_smolvla.py
+Entry class:          SmolVLAForConditionalGeneration
+Output directory:     decomposition_workspace/output/level3/smolvla/
+```
+
+> For `huggingface` and `repo` input types, the agent will automatically explore
+> the source code to discover dependencies, config values, forward signature,
+> and input shapes during Phase 0 (see MAIN_PROMPT.md Step 0.1).
 
 ---
 

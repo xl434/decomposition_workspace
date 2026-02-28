@@ -133,14 +133,16 @@ def forward(self, x):
 - **Decomposes to**: Fusions (attention, MLP, normalization groups)
 
 ### Level 1: Fusion
-- **Contains**: 2-5 tightly coupled operations
-- **Examples**: Conv+BN+ReLU, QKV projection, SwiGLU, Attention scores
+- **Contains**: Adjacent operations that CAN be fused (no data flow breaks between them)
+- **Examples**: Conv+BN+ReLU, Linear+SiLU (SwiGLU gate), QKV proj+reshape+attention scores
+- **Why fused**: These operations form a straight-line computation — output of one feeds directly into the next, with no residual/skip connections interrupting
 - **Decomposes to**: Kernels (individual operations)
 
 ### Level 0: Kernel
-- **Contains**: Single operation
-- **Examples**: Linear, Conv2d, ReLU, LayerNorm, MatMul, Softmax
+- **Contains**: Single logical operation that stands alone (can't be fused with neighbors)
+- **Examples**: Linear, Conv2d, ReLU, LayerNorm, RMSNorm, RoPE, MatMul, Softmax, SiLU, GELU, Embedding
 - **Decomposes to**: Nothing (leaf node)
+- **Why standalone**: Typically isolated by residual connections, skip connections, or data flow branches that prevent fusion with adjacent operations
 
 ---
 
@@ -182,22 +184,35 @@ Tolerances are auto-detected by verify_step.py based on input dtype. Override wi
 
 ### Anti-Cheat Rules
 
-Refactored `forward()` may ONLY contain:
+**Both `forward()` AND `__init__()` are scanned.** The script checks two things:
+
+#### In `forward()` — no compute ops:
 
 **Allowed (data plumbing):**
 - `self.child_module(x)` — child module calls
 - `x + residual`, `x * scale` — arithmetic for residuals/scaling
+- `(pred - target) ** 2` — loss computation as arithmetic
 - `torch.cat(...)`, `torch.split(...)`, `torch.chunk(...)` — tensor assembly
 - `x.reshape(...)`, `x.permute(...)`, `x.transpose(...)`, `x.view(...)`, `x.flatten(...)` — shape ops
 - `x[:, :, 0]`, `x[..., :n]` — indexing/slicing
 - `x.contiguous()`, `x.to(dtype)` — memory/type casting
+- `x.masked_fill(mask, value)` — masking as data plumbing
 
 **Disallowed (must be in child module):**
-- `nn.Linear(...)`, `nn.Conv2d(...)` — any nn.Module construction
 - `F.linear(...)`, `F.softmax(...)`, `F.relu(...)` — functional compute
 - `torch.matmul(...)`, `torch.bmm(...)`, `torch.einsum(...)` — compute ops
 - `F.layer_norm(...)`, `F.batch_norm(...)` — normalization
-- Any parameterized operation not imported from a child file
+- `F.mse_loss(...)`, `F.cross_entropy(...)` — loss functions (use arithmetic instead)
+- `torch.where(...)` — use `masked_fill` or arithmetic instead
+
+#### In `__init__()` — no raw nn.Module construction:
+
+**Disallowed:**
+- `nn.Linear(...)`, `nn.Conv2d(...)`, `nn.Embedding(...)` — any nn.Module constructed directly
+- `nn.Parameter(...)` — standalone parameters
+- Any `nn.Module` not imported from a child component file
+
+**Why:** Every learnable child module in `RefactoredModel` must be an instance of a class imported from a child file (e.g., `from children.linear_768x3072_fp32 import Model as UpProj`). This ensures the decomposition is complete — no operations hiding in the refactored model itself.
 
 ### When Standard Script Doesn't Work
 
@@ -231,6 +246,16 @@ def forward(self, x):
 **Shared/tied weights:**
 If two children share the same weight (e.g., tied embeddings), use `weight_map.json` to map the single original parameter to both locations.
 
+**Deduplicated kernels (multiple instances of the same kernel file):**
+When the same kernel file is used for multiple instances (e.g., 12 layers each with `linear_768x3072_fp32.py`), the refactored code creates separate `nn.Module` instances from the same class. Each instance has its own weights. The weight map must assign the correct layer's weights to each instance:
+```python
+# refactored.py — two instances of the same kernel
+from children.linear_768x3072_fp32 import Model as UpProj0
+from children.linear_768x3072_fp32 import Model as UpProj1
+# weight_map.json maps: layers.0.mlp.up.weight → up_proj_0.weight
+#                       layers.1.mlp.up.weight → up_proj_1.weight
+```
+
 **In-place operations:**
 `ReLU(inplace=True)` and similar — the refactored version should match the original's behavior. For verification, both produce identical numerical results.
 
@@ -244,21 +269,27 @@ def forward(self, x):
     return x + residual
 ```
 
+
 ---
 
 ## Checklist Before Submission
 
 ```
 [ ] Each decomposition step has refactored.py with ONLY child module calls
-[ ] Each step's verify_step.py PASSES
+[ ] Each refactored __init__() has NO raw nn.Module construction (nn.Linear, nn.Embedding, etc.)
+[ ] Each step's verify_step.py PASSES (numerical equivalence + anti-cheat)
 [ ] All component files execute without error
 [ ] composition_test.py PASSES
+[ ] coverage_summary.json exists in verification/ (from extract_ops.py)
 [ ] Shape flow is documented and verified
 [ ] Operation counts match between original and decomposed
-[ ] No kernel has more than 1 operation
+[ ] No kernel has more than 1 logical operation
+[ ] Kernel classification is SEMANTIC (RMSNorm, RoPE → kernel, not fusion)
+[ ] Kernel files use shape-based naming: {operation}_{shape_signature}_{dtype}.py
 [ ] All leaf nodes are at kernel level
-[ ] Abstraction hierarchy is respected (L3→L2→L1→L0)
+[ ] Abstraction hierarchy is respected (children are always at a lower level than parent)
 [ ] decomposition_tree.json is complete
+[ ] decomposition_log.json records key decisions and difficulties
 [ ] All dtypes are preserved
 [ ] ALL DIMENSIONS MATCH THE ORIGINAL MODEL EXACTLY
     - get_inputs() uses the same shapes as the original model

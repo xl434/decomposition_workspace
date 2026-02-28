@@ -114,9 +114,34 @@ DISALLOWED_CALL_PATTERNS = [
 # - x.to(dtype), x.float(), x.half()  # dtype casting
 
 
+# nn.Module constructors that must NOT appear in RefactoredModel.__init__()
+# All children must be imported from child component files, not constructed directly.
+DISALLOWED_INIT_PATTERNS = [
+    r"nn\.Linear\s*\(",
+    r"nn\.Conv[123]d\s*\(",
+    r"nn\.ConvTranspose[123]d\s*\(",
+    r"nn\.BatchNorm[123]d\s*\(",
+    r"nn\.LayerNorm\s*\(",
+    r"nn\.GroupNorm\s*\(",
+    r"nn\.InstanceNorm[123]d\s*\(",
+    r"nn\.Embedding\s*\(",
+    r"nn\.LSTM\s*\(",
+    r"nn\.GRU\s*\(",
+    r"nn\.RNN\s*\(",
+    r"nn\.MultiheadAttention\s*\(",
+    r"nn\.Transformer\s*\(",
+    r"nn\.Parameter\s*\(",
+]
+
+
 def check_anticheat_source(refactored_path: Path) -> List[Dict[str, Any]]:
     """
-    Scan the refactored module's forward() source for disallowed operations.
+    Scan the refactored module's forward() AND __init__() for disallowed operations.
+
+    Checks:
+    1. forward() must not contain compute ops (DISALLOWED_CALL_PATTERNS)
+    2. __init__() must not directly construct nn.Module children (DISALLOWED_INIT_PATTERNS)
+       — all children must be imported from child component files
 
     Returns a list of violations, each with pattern, line_number, and line_text.
     Empty list means no violations found.
@@ -128,51 +153,61 @@ def check_anticheat_source(refactored_path: Path) -> List[Dict[str, Any]]:
     except Exception as e:
         return [{"pattern": "FILE_READ_ERROR", "line_number": 0, "line_text": str(e)}]
 
-    # Parse AST to find the forward() method
+    # Parse AST to find the RefactoredModel class
     try:
         tree = ast.parse(source)
     except SyntaxError as e:
         return [{"pattern": "SYNTAX_ERROR", "line_number": e.lineno or 0, "line_text": str(e)}]
 
-    # Find the RefactoredModel class and its forward method
+    source_lines = source.split("\n")
+
+    # Find the RefactoredModel class and its forward/__init__ methods
     forward_source = None
     forward_start_line = None
+    init_source = None
+    init_start_line = None
+    refactored_class = None
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef) and "Refactored" in node.name:
+            refactored_class = node
             for item in node.body:
-                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and item.name == "forward":
-                    forward_start_line = item.lineno
-                    forward_end_line = item.end_lineno or (item.lineno + 100)
-                    source_lines = source.split("\n")
-                    forward_source = "\n".join(
-                        source_lines[forward_start_line - 1 : forward_end_line]
-                    )
-                    break
+                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    start = item.lineno
+                    end = item.end_lineno or (start + 100)
+                    method_source = "\n".join(source_lines[start - 1 : end])
+                    if item.name == "forward":
+                        forward_source = method_source
+                        forward_start_line = start
+                    elif item.name == "__init__":
+                        init_source = method_source
+                        init_start_line = start
+            break
 
+    # Fallback: look for any class with forward()
     if forward_source is None:
-        # Try looking for any class with a forward method
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
                 for item in node.body:
-                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and item.name == "forward":
-                        forward_start_line = item.lineno
-                        forward_end_line = item.end_lineno or (item.lineno + 100)
-                        source_lines = source.split("\n")
-                        forward_source = "\n".join(
-                            source_lines[forward_start_line - 1 : forward_end_line]
-                        )
-                        break
+                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        start = item.lineno
+                        end = item.end_lineno or (start + 100)
+                        method_source = "\n".join(source_lines[start - 1 : end])
+                        if item.name == "forward" and forward_source is None:
+                            forward_source = method_source
+                            forward_start_line = start
+                        elif item.name == "__init__" and init_source is None:
+                            init_source = method_source
+                            init_start_line = start
 
     if forward_source is None:
         return [{"pattern": "NO_FORWARD_METHOD", "line_number": 0,
                  "line_text": "Could not find forward() method in refactored code"}]
 
-    # Scan forward() source for disallowed patterns
+    # Scan forward() source for disallowed compute patterns
     forward_lines = forward_source.split("\n")
     for i, line in enumerate(forward_lines):
         stripped = line.strip()
-        # Skip comments
         if stripped.startswith("#"):
             continue
         for pattern in DISALLOWED_CALL_PATTERNS:
@@ -181,7 +216,24 @@ def check_anticheat_source(refactored_path: Path) -> List[Dict[str, Any]]:
                     "pattern": pattern,
                     "line_number": (forward_start_line or 1) + i,
                     "line_text": stripped,
+                    "location": "forward()",
                 })
+
+    # Scan __init__() for direct nn.Module construction
+    if init_source is not None:
+        init_lines = init_source.split("\n")
+        for i, line in enumerate(init_lines):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            for pattern in DISALLOWED_INIT_PATTERNS:
+                if re.search(pattern, line):
+                    violations.append({
+                        "pattern": pattern,
+                        "line_number": (init_start_line or 1) + i,
+                        "line_text": stripped,
+                        "location": "__init__()",
+                    })
 
     return violations
 
@@ -222,7 +274,7 @@ def load_model_from_file(
     path: Path,
     module_name: str = "module",
     model_class_name: str = None,
-) -> Tuple[nn.Module, list, callable]:
+) -> Tuple[nn.Module, list, callable, callable]:
     """
     Load a model from a Python file.
 
@@ -230,8 +282,9 @@ def load_model_from_file(
     - model_class_name (if specified), else 'RefactoredModel', else 'Model'
     - get_inputs() function
     - get_init_inputs() function (optional, defaults to lambda: [])
+    - get_input_kwargs() function (optional, defaults to lambda: {})
 
-    Returns (model_instance, inputs, get_inputs_fn)
+    Returns (model_instance, inputs, get_inputs_fn, get_input_kwargs_fn)
     """
     spec = importlib.util.spec_from_file_location(module_name, str(path))
     if spec is None or spec.loader is None:
@@ -266,11 +319,12 @@ def load_model_from_file(
         raise AttributeError(f"No get_inputs() function found in {path}")
 
     get_init_inputs = getattr(module, "get_init_inputs", lambda: [])
+    get_input_kwargs = getattr(module, "get_input_kwargs", lambda: {})
 
     model = ModelClass(*get_init_inputs())
     inputs = get_inputs()
 
-    return model, inputs, get_inputs
+    return model, inputs, get_inputs, get_input_kwargs
 
 
 # =========================================================================
@@ -474,12 +528,13 @@ def verify_step(
 
         print("[1/3] Anti-cheat validation...")
 
-        # Source scan
+        # Source scan (forward + __init__)
         source_violations = check_anticheat_source(refactored_path)
         if source_violations:
             print(f"      [WARN] {len(source_violations)} source violation(s) found:")
             for v in source_violations[:5]:
-                print(f"        Line {v['line_number']}: {v['line_text']}")
+                location = v.get("location", "unknown")
+                print(f"        [{location}] Line {v['line_number']}: {v['line_text']}")
                 print(f"          Matched: {v['pattern']}")
             if len(source_violations) > 5:
                 print(f"        ... and {len(source_violations) - 5} more")
@@ -497,7 +552,7 @@ def verify_step(
     print("[2/3] Loading models and transferring weights...")
 
     try:
-        original, orig_inputs, get_inputs_fn = load_model_from_file(
+        original, orig_inputs, get_inputs_fn, get_input_kwargs_fn = load_model_from_file(
             original_path, "original_module", "Model"
         )
         original.eval()
@@ -510,7 +565,7 @@ def verify_step(
         return result
 
     try:
-        refactored, _, _ = load_model_from_file(
+        refactored, _, _, _ = load_model_from_file(
             refactored_path, "refactored_module"
         )
         refactored.eval()
@@ -604,10 +659,11 @@ def verify_step(
 
         # Generate fresh inputs with same shapes
         trial_inputs = get_inputs_fn()
+        trial_kwargs = get_input_kwargs_fn()
 
         with torch.no_grad():
             try:
-                orig_out = original(*trial_inputs)
+                orig_out = original(*trial_inputs, **trial_kwargs)
             except Exception as e:
                 print(f"      [FAIL] Original model error on trial {trial_idx}: {e}")
                 trials.append({"trial": trial_idx, "seed": seed, "error": str(e), "pass": False})
@@ -615,7 +671,7 @@ def verify_step(
                 continue
 
             try:
-                ref_out = refactored(*trial_inputs)
+                ref_out = refactored(*trial_inputs, **trial_kwargs)
             except Exception as e:
                 print(f"      [FAIL] Refactored model error on trial {trial_idx}: {e}")
                 trials.append({"trial": trial_idx, "seed": seed, "error": str(e), "pass": False})

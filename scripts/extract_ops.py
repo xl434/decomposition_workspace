@@ -333,9 +333,109 @@ def extract_ops(model: nn.Module, inputs: list) -> Dict[str, Any]:
 # Coverage comparison
 # =========================================================================
 
+# Map low-level ATen/functional op names to canonical kernel-level names.
+# This bridges the gap between torch.compile (which captures ATen ops like
+# "linear", "embedding") and forward hooks (which capture nn.Module names
+# like "Linear", "Embedding").
+OP_CANONICAL_MAP = {
+    # nn.Module names → canonical
+    "Linear": "linear",
+    "Conv2d": "conv2d",
+    "Conv1d": "conv1d",
+    "Conv3d": "conv3d",
+    "ConvTranspose2d": "conv_transpose2d",
+    "BatchNorm2d": "batch_norm",
+    "LayerNorm": "layer_norm",
+    "GroupNorm": "group_norm",
+    "Embedding": "embedding",
+    "LSTM": "lstm",
+    "GRU": "gru",
+    "ReLU": "relu",
+    "GELU": "gelu",
+    "SiLU": "silu",
+    "Sigmoid": "sigmoid",
+    "Tanh": "tanh",
+    "Softmax": "softmax",
+    "Dropout": "dropout",
+    "MaxPool2d": "max_pool2d",
+    "AvgPool2d": "avg_pool2d",
+    "AdaptiveAvgPool2d": "adaptive_avg_pool2d",
+    # Already-lowered names (identity mapping)
+    "linear": "linear",
+    "conv2d": "conv2d",
+    "conv1d": "conv1d",
+    "embedding": "embedding",
+    "layer_norm": "layer_norm",
+    "group_norm": "group_norm",
+    "gelu": "gelu",
+    "silu": "silu",
+    "softmax": "softmax",
+    "matmul": "matmul",
+    "bmm": "matmul",
+    "mm": "matmul",
+    "relu": "relu",
+    "sigmoid": "sigmoid",
+    "tanh": "tanh",
+    "dropout": "dropout",
+    "batch_norm": "batch_norm",
+    # ATen-lowered names that torch.compile may produce
+    "_native_batch_norm_legit": "batch_norm",
+    "native_layer_norm": "layer_norm",
+    "native_group_norm": "group_norm",
+    "addmm": "linear",
+    "_softmax": "softmax",
+}
+
+# Operations that are data plumbing / shape manipulation, NOT compute ops.
+# These should be excluded from coverage comparison since they aren't
+# expected to have corresponding kernel files.
+#
+# Also includes PRIMITIVE ops that are internal sub-operations of higher-level
+# kernels. For example, when torch.compile traces through RMSNorm, it captures
+# individual pow/mean/rsqrt/mul ops — but these are covered by the rms_norm
+# kernel. Similarly, RoPE's cos/sin ops and attention's add/mul for masking
+# are sub-operations, not standalone kernels.
+DATA_PLUMBING_OPS = {
+    "output", "placeholder", "get_attr", "unknown",
+    # Shape/data manipulation
+    "reshape", "view", "permute", "transpose", "contiguous", "flatten",
+    "unsqueeze", "squeeze", "expand", "expand_as", "repeat",
+    "cat", "stack", "split", "chunk", "narrow",
+    "clone", "to", "type", "float", "half", "int",
+    "getitem", "setitem",
+    # Index/range generation
+    "arange", "linspace", "ones", "zeros", "full", "empty_like",
+    "ones_like", "zeros_like", "tensor",
+    # Scalar/boolean ops for control flow and masking
+    "le", "lt", "ge", "gt", "eq", "ne", "and_", "or_", "not_",
+    "min", "max", "where",
+    # In-place arithmetic
+    "iadd", "imul",
+    # Primitive arithmetic — these are sub-operations inside higher-level kernels
+    # (e.g., pow/mean/rsqrt inside RMSNorm, cos/sin inside RoPE, add/mul for
+    # residuals and scaling). They are NOT standalone kernel-level operations.
+    "add", "sub", "mul", "truediv", "pow", "rsqrt", "sqrt",
+    "cos", "sin", "exp", "log",
+    "mean", "sum", "cumsum",
+    # Loss functions (typically in model-level forward as arithmetic)
+    "mse_loss",
+}
+
+
+def normalize_op_type(op_type: str) -> str:
+    """Normalize an op type to its canonical name."""
+    return OP_CANONICAL_MAP.get(op_type, op_type)
+
+
+def is_compute_op(op_type: str) -> bool:
+    """Return True if this op is a compute operation (not data plumbing)."""
+    canonical = normalize_op_type(op_type)
+    return canonical not in DATA_PLUMBING_OPS
+
+
 def normalize_op(op: Dict) -> Tuple[str, Optional[str]]:
     """Normalize an op to (op_type, dtype) for comparison."""
-    op_type = op.get("op_type", "unknown")
+    op_type = normalize_op_type(op.get("op_type", "unknown"))
     dtype = op.get("dtype", "unknown")
     return (op_type, dtype)
 
@@ -393,24 +493,30 @@ def compute_coverage(
     """
     Compare original model ops against decomposed component ops.
 
-    Uses op_type counting (how many of each type exist in original vs decomposed).
+    Uses CANONICAL op_type counting. Normalizes names (e.g., "Linear" ↔ "linear")
+    and filters out data plumbing ops (reshape, view, cat, indexing, etc.) that
+    don't have corresponding kernel files.
     """
-    # Count ops by type in original
+    # Count COMPUTE ops by canonical type in original
     orig_counts = defaultdict(int)
+    orig_plumbing = defaultdict(int)
     for op in original_ops:
-        op_type = op.get("op_type", "unknown")
-        # Skip non-compute ops
-        if op_type in ("output", "placeholder", "get_attr", "unknown"):
-            continue
-        orig_counts[op_type] += 1
+        raw_type = op.get("op_type", "unknown")
+        canonical = normalize_op_type(raw_type)
+        if is_compute_op(raw_type):
+            orig_counts[canonical] += 1
+        else:
+            orig_plumbing[canonical] += 1
 
-    # Count ops by type in decomposed
+    # Count COMPUTE ops by canonical type in decomposed
     decomp_counts = defaultdict(int)
     for op in decomposed_ops:
-        op_type = op.get("op_type", "unknown")
-        if op_type in ("output", "placeholder", "get_attr", "unknown", "LOAD_ERROR"):
+        raw_type = op.get("op_type", "unknown")
+        if raw_type == "LOAD_ERROR":
             continue
-        decomp_counts[op_type] += 1
+        canonical = normalize_op_type(raw_type)
+        if is_compute_op(raw_type):
+            decomp_counts[canonical] += 1
 
     # Compare
     all_op_types = set(orig_counts.keys()) | set(decomp_counts.keys())
@@ -461,6 +567,7 @@ def compute_coverage(
         "extra_op_types": extra,
         "coverage_pct": round(coverage_pct, 1),
         "op_details": op_details,
+        "data_plumbing_excluded": dict(orig_plumbing),
     }
 
 
@@ -512,17 +619,25 @@ def analyze_coverage(
         for w in extraction["warnings"]:
             print(f"      [WARN] {w}")
 
-    # Summarize original ops
-    op_summary = defaultdict(int)
+    # Summarize original ops (separated into compute vs plumbing)
+    compute_summary = defaultdict(int)
+    plumbing_summary = defaultdict(int)
     for op in extraction["ops"]:
-        op_type = op.get("op_type", "unknown")
-        if op_type not in ("output", "placeholder", "get_attr"):
-            op_summary[op_type] += 1
+        raw_type = op.get("op_type", "unknown")
+        canonical = normalize_op_type(raw_type)
+        if is_compute_op(raw_type):
+            compute_summary[canonical] += 1
+        elif canonical not in ("output", "placeholder", "get_attr", "unknown"):
+            plumbing_summary[canonical] += 1
 
-    if op_summary:
-        print("      Op types found:")
-        for op_type, count in sorted(op_summary.items()):
+    if compute_summary:
+        print("      Compute ops (will be matched against kernels):")
+        for op_type, count in sorted(compute_summary.items()):
             print(f"        {op_type}: {count}")
+    if plumbing_summary:
+        print(f"      Data plumbing ops (excluded from coverage): "
+              f"{sum(plumbing_summary.values())} total "
+              f"({len(plumbing_summary)} types)")
 
     # Find and analyze children
     print("\n[2/3] Extracting ops from decomposed components...")
@@ -592,12 +707,20 @@ def _write_report(result: Dict, output_path: Optional[Path]):
 
         # Create a serializable version (remove raw op lists for readability)
         report = {k: v for k, v in result.items() if k != "original_ops"}
-        report["original_ops_summary"] = defaultdict(int)
+
+        # Summarize original ops using canonical names
+        compute_ops = defaultdict(int)
+        plumbing_ops = defaultdict(int)
         for op in result.get("original_ops", []):
-            op_type = op.get("op_type", "unknown")
-            if op_type not in ("output", "placeholder", "get_attr"):
-                report["original_ops_summary"][op_type] += 1
-        report["original_ops_summary"] = dict(report["original_ops_summary"])
+            raw_type = op.get("op_type", "unknown")
+            canonical = normalize_op_type(raw_type)
+            if is_compute_op(raw_type):
+                compute_ops[canonical] += 1
+            elif canonical not in ("output", "placeholder", "get_attr", "unknown"):
+                plumbing_ops[canonical] += 1
+
+        report["original_compute_ops"] = dict(compute_ops)
+        report["original_plumbing_ops"] = dict(plumbing_ops)
 
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, default=str)
