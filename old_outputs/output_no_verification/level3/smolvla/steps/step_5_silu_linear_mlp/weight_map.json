@@ -1,0 +1,6 @@
+{
+  "mlp_in.weight": "mlp_in.linear.weight",
+  "mlp_in.bias": "mlp_in.linear.bias",
+  "mlp_out.weight": "mlp_out.linear.weight",
+  "mlp_out.bias": "mlp_out.linear.bias"
+}

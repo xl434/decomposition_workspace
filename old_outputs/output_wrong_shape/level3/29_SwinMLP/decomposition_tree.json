@@ -1,0 +1,172 @@
+{
+  "model_name": "29_SwinMLP",
+  "model_level": "level3",
+  "description": "SwinMLP: Swin Transformer variant replacing self-attention with spatial MLP (Conv1d)",
+  "test_dimensions": {
+    "img_size": 32,
+    "patch_size": 4,
+    "in_chans": 3,
+    "num_classes": 10,
+    "embed_dim": 16,
+    "depths": [1, 1, 1, 1],
+    "num_heads": [2, 4, 4, 8],
+    "window_size": 4,
+    "mlp_ratio": 2.0,
+    "drop_rate": 0.0,
+    "drop_path_rate": 0.0,
+    "batch_size": 2
+  },
+  "input_shape": [2, 3, 32, 32],
+  "output_shape": [2, 10],
+  "levels": {
+    "level_3": {
+      "swin_mlp": {
+        "file": "level_3_model/swin_mlp.py",
+        "description": "Full SwinMLP model with PatchEmbed, 4 BasicLayers (SwinMLPBlock + PatchMerging), LayerNorm, AvgPool, Linear head",
+        "input_shape": [2, 3, 32, 32],
+        "output_shape": [2, 10],
+        "children": ["patch_embed", "basic_layer_0", "classifier_head"]
+      }
+    },
+    "level_2": {
+      "patch_embed": {
+        "file": "level_2_layer/patch_embed.py",
+        "description": "PatchEmbed: Conv2d(3,16,4,stride=4) + flatten + transpose + LayerNorm(16)",
+        "input_shape": [2, 3, 32, 32],
+        "output_shape": [2, 64, 16],
+        "children": ["conv_proj_norm"]
+      },
+      "basic_layer_0": {
+        "file": "level_2_layer/basic_layer_0.py",
+        "description": "BasicLayer 0: 1 SwinMLPBlock(dim=16, res=(8,8), heads=2, ws=4) + PatchMerging(8,8,16->32)",
+        "input_shape": [2, 64, 16],
+        "output_shape": [2, 16, 32],
+        "children": ["spatial_mlp_block", "ffn_block"]
+      },
+      "classifier_head": {
+        "file": "level_2_layer/classifier_head.py",
+        "description": "LayerNorm(128) + AdaptiveAvgPool1d(1) + Flatten + Linear(128,10)",
+        "input_shape": [2, 1, 128],
+        "output_shape": [2, 10],
+        "children": ["layer_norm", "adaptive_avg_pool1d", "linear_head"]
+      }
+    },
+    "level_1": {
+      "conv_proj_norm": {
+        "file": "level_1_fusion/conv_proj_norm.py",
+        "description": "Conv2d(3,16,4,stride=4) + flatten(2) + transpose(1,2) + LayerNorm(16)",
+        "input_shape": [2, 3, 32, 32],
+        "output_shape": [2, 64, 16],
+        "children": ["conv2d_patch", "flatten_transpose", "layer_norm"]
+      },
+      "spatial_mlp_block": {
+        "file": "level_1_fusion/spatial_mlp_block.py",
+        "description": "Window partition + grouped Conv1d spatial mixing + window reverse (replaces self-attention)",
+        "input_shape": [2, 64, 16],
+        "output_shape": [2, 64, 16],
+        "children": ["spatial_conv1d"]
+      },
+      "ffn_block": {
+        "file": "level_1_fusion/ffn_block.py",
+        "description": "LayerNorm(16) + Linear(16,32) + GELU + Linear(32,16) with residual",
+        "input_shape": [2, 64, 16],
+        "output_shape": [2, 64, 16],
+        "children": ["layer_norm", "linear_ffn_up", "gelu", "linear_ffn_down"]
+      }
+    },
+    "level_0": {
+      "conv2d_patch": {
+        "file": "level_0_kernel/conv2d_patch.py",
+        "description": "Conv2d(3, 16, kernel_size=4, stride=4)",
+        "input_shape": [2, 3, 32, 32],
+        "output_shape": [2, 16, 8, 8]
+      },
+      "flatten_transpose": {
+        "file": "level_0_kernel/flatten_transpose.py",
+        "description": "flatten(2).transpose(1,2): spatial dims to sequence",
+        "input_shape": [2, 16, 8, 8],
+        "output_shape": [2, 64, 16]
+      },
+      "layer_norm": {
+        "file": "level_0_kernel/layer_norm.py",
+        "description": "LayerNorm(16) on embedding dimension",
+        "input_shape": [2, 64, 16],
+        "output_shape": [2, 64, 16]
+      },
+      "spatial_conv1d": {
+        "file": "level_0_kernel/spatial_conv1d.py",
+        "description": "Conv1d(32, 32, kernel_size=1, groups=2) for spatial mixing",
+        "input_shape": [8, 32, 8],
+        "output_shape": [8, 32, 8]
+      },
+      "linear_ffn_up": {
+        "file": "level_0_kernel/linear_ffn_up.py",
+        "description": "Linear(16, 32) FFN up-projection",
+        "input_shape": [2, 64, 16],
+        "output_shape": [2, 64, 32]
+      },
+      "gelu": {
+        "file": "level_0_kernel/gelu.py",
+        "description": "GELU activation",
+        "input_shape": [2, 64, 32],
+        "output_shape": [2, 64, 32]
+      },
+      "linear_ffn_down": {
+        "file": "level_0_kernel/linear_ffn_down.py",
+        "description": "Linear(32, 16) FFN down-projection",
+        "input_shape": [2, 64, 32],
+        "output_shape": [2, 64, 16]
+      },
+      "linear_reduction": {
+        "file": "level_0_kernel/linear_reduction.py",
+        "description": "Linear(64, 32, bias=False) for PatchMerging reduction",
+        "input_shape": [2, 16, 64],
+        "output_shape": [2, 16, 32]
+      },
+      "adaptive_avg_pool1d": {
+        "file": "level_0_kernel/adaptive_avg_pool1d.py",
+        "description": "AdaptiveAvgPool1d(1) global average pooling",
+        "input_shape": [2, 128, 1],
+        "output_shape": [2, 128, 1]
+      },
+      "linear_head": {
+        "file": "level_0_kernel/linear_head.py",
+        "description": "Linear(128, 10) classification head",
+        "input_shape": [2, 128],
+        "output_shape": [2, 10]
+      }
+    }
+  },
+  "data_flow": {
+    "full_pipeline": [
+      {"stage": "PatchEmbed", "input": "[2,3,32,32]", "output": "[2,64,16]"},
+      {"stage": "Dropout", "input": "[2,64,16]", "output": "[2,64,16]"},
+      {"stage": "BasicLayer_0 (SwinMLPBlock + PatchMerging)", "input": "[2,64,16]", "output": "[2,16,32]"},
+      {"stage": "BasicLayer_1 (SwinMLPBlock + PatchMerging)", "input": "[2,16,32]", "output": "[2,4,64]"},
+      {"stage": "BasicLayer_2 (SwinMLPBlock + PatchMerging)", "input": "[2,4,64]", "output": "[2,1,128]"},
+      {"stage": "BasicLayer_3 (SwinMLPBlock only)", "input": "[2,1,128]", "output": "[2,1,128]"},
+      {"stage": "LayerNorm", "input": "[2,1,128]", "output": "[2,1,128]"},
+      {"stage": "AvgPool", "input": "[2,128,1]", "output": "[2,128,1]"},
+      {"stage": "Flatten", "input": "[2,128,1]", "output": "[2,128]"},
+      {"stage": "Linear Head", "input": "[2,128]", "output": "[2,10]"}
+    ],
+    "swin_mlp_block_internal": [
+      {"stage": "LayerNorm", "input": "[B,L,C]", "output": "[B,L,C]"},
+      {"stage": "Reshape to 2D", "input": "[B,L,C]", "output": "[B,H,W,C]"},
+      {"stage": "Window Partition", "input": "[B,H,W,C]", "output": "[nW*B,ws,ws,C]"},
+      {"stage": "Reshape for Conv1d", "input": "[nW*B,ws*ws,C]", "output": "[nW*B,heads*ws^2,head_dim]"},
+      {"stage": "Spatial MLP (Conv1d)", "input": "[nW*B,heads*ws^2,head_dim]", "output": "[nW*B,heads*ws^2,head_dim]"},
+      {"stage": "Reshape back", "input": "[nW*B,heads*ws^2,head_dim]", "output": "[nW*B,ws*ws,C]"},
+      {"stage": "Window Reverse", "input": "[nW*B,ws,ws,C]", "output": "[B,H,W,C]"},
+      {"stage": "Residual Add", "input": "[B,L,C]", "output": "[B,L,C]"},
+      {"stage": "FFN (LN + MLP)", "input": "[B,L,C]", "output": "[B,L,C]"},
+      {"stage": "Residual Add", "input": "[B,L,C]", "output": "[B,L,C]"}
+    ]
+  },
+  "key_insights": {
+    "novel_component": "Spatial MLP via grouped Conv1d replaces self-attention",
+    "window_mechanism": "Non-overlapping windows for local spatial mixing, shifted windows for cross-window communication",
+    "hierarchical_design": "4-stage hierarchy with PatchMerging for progressive downsampling (like Swin Transformer)",
+    "resolution_adaptation": "Window size automatically clamped to min(input_resolution) for small feature maps"
+  }
+}

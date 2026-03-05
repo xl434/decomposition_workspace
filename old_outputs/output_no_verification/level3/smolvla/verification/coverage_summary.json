@@ -1,0 +1,163 @@
+{
+  "timestamp": "2026-02-28T16:38:45.791399",
+  "model_file": "output\\level3\\smolvla\\level_3_model\\smolvla.py",
+  "status": "LOW_COVERAGE",
+  "extraction_method": "torch.compile",
+  "extraction_warnings": [],
+  "extraction_errors": [
+    "torch.fx: symbolic_trace failed: Proxy object cannot be iterated. This can be attempted when the Proxy is used in a loop or as a *args or **kwargs function argument. See the torch.fx docs on pytorch.org for a more detailed explanation of what types of control flow can be traced, and check out the Proxy docstring for help troubleshooting Proxy iteration errors"
+  ],
+  "decomposed_ops_count": 4,
+  "coverage": {
+    "total_original_ops": 480,
+    "total_decomposed_ops": 4,
+    "covered_op_count": 3,
+    "missing_op_types": [
+      "gelu",
+      "layer_norm",
+      "linear",
+      "matmul",
+      "silu",
+      "softmax"
+    ],
+    "extra_op_types": [
+      "conv2d"
+    ],
+    "coverage_pct": 0.6,
+    "op_details": [
+      {
+        "op_type": "conv2d",
+        "original_count": 0,
+        "decomposed_count": 1,
+        "status": "extra"
+      },
+      {
+        "op_type": "embedding",
+        "original_count": 1,
+        "decomposed_count": 1,
+        "status": "covered"
+      },
+      {
+        "op_type": "gelu",
+        "original_count": 12,
+        "decomposed_count": 0,
+        "status": "missing"
+      },
+      {
+        "op_type": "layer_norm",
+        "original_count": 25,
+        "decomposed_count": 1,
+        "status": "partial"
+      },
+      {
+        "op_type": "linear",
+        "original_count": 301,
+        "decomposed_count": 1,
+        "status": "partial"
+      },
+      {
+        "op_type": "matmul",
+        "original_count": 72,
+        "decomposed_count": 0,
+        "status": "missing"
+      },
+      {
+        "op_type": "silu",
+        "original_count": 33,
+        "decomposed_count": 0,
+        "status": "missing"
+      },
+      {
+        "op_type": "softmax",
+        "original_count": 36,
+        "decomposed_count": 0,
+        "status": "missing"
+      }
+    ],
+    "data_plumbing_excluded": {
+      "getitem": 354,
+      "mul": 383,
+      "sub": 51,
+      "add": 131,
+      "view": 150,
+      "transpose": 132,
+      "reshape": 86,
+      "contiguous": 12,
+      "permute": 50,
+      "linspace": 1,
+      "pow": 107,
+      "truediv": 41,
+      "sin": 41,
+      "cos": 41,
+      "cat": 30,
+      "type": 1,
+      "expand_as": 1,
+      "ones": 1,
+      "tensor": 1,
+      "expand": 49,
+      "cumsum": 2,
+      "le": 1,
+      "and_": 1,
+      "to": 437,
+      "mean": 66,
+      "rsqrt": 66,
+      "arange": 40,
+      "split": 40,
+      "empty_like": 40,
+      "setitem": 80,
+      "imul": 24,
+      "where": 24,
+      "iadd": 64,
+      "clone": 32,
+      "min": 8,
+      "mse_loss": 1
+    }
+  },
+  "original_compute_ops": {
+    "layer_norm": 25,
+    "linear": 301,
+    "matmul": 72,
+    "softmax": 36,
+    "gelu": 12,
+    "embedding": 1,
+    "silu": 33
+  },
+  "original_plumbing_ops": {
+    "getitem": 354,
+    "mul": 383,
+    "sub": 51,
+    "add": 131,
+    "view": 150,
+    "transpose": 132,
+    "reshape": 86,
+    "contiguous": 12,
+    "permute": 50,
+    "linspace": 1,
+    "pow": 107,
+    "truediv": 41,
+    "sin": 41,
+    "cos": 41,
+    "cat": 30,
+    "type": 1,
+    "expand_as": 1,
+    "ones": 1,
+    "tensor": 1,
+    "expand": 49,
+    "cumsum": 2,
+    "le": 1,
+    "and_": 1,
+    "to": 437,
+    "mean": 66,
+    "rsqrt": 66,
+    "arange": 40,
+    "split": 40,
+    "empty_like": 40,
+    "setitem": 80,
+    "imul": 24,
+    "where": 24,
+    "iadd": 64,
+    "clone": 32,
+    "min": 8,
+    "mse_loss": 1
+  }
+}

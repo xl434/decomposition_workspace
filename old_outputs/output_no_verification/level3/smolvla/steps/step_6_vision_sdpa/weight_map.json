@@ -1,0 +1,10 @@
+{
+  "q_proj.weight": "q_proj.linear.weight",
+  "q_proj.bias": "q_proj.linear.bias",
+  "k_proj.weight": "k_proj.linear.weight",
+  "k_proj.bias": "k_proj.linear.bias",
+  "v_proj.weight": "v_proj.linear.weight",
+  "v_proj.bias": "v_proj.linear.bias",
+  "out_proj.weight": "out_proj.linear.weight",
+  "out_proj.bias": "out_proj.linear.bias"
+}

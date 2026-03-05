@@ -1,0 +1,29 @@
+{
+  "name": "29_Matmul_Mish_Mish",
+  "level": 1,
+  "type": "fusion",
+  "children": [
+    {
+      "name": "linear",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/linear.py",
+      "operation": "nn.Linear"
+    },
+    {
+      "name": "mish_1",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/mish_1.py",
+      "operation": "F.mish"
+    },
+    {
+      "name": "mish_2",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/mish_2.py",
+      "operation": "F.mish"
+    }
+  ],
+  "file": "level_1_fusion/linear_mish_mish.py"
+}

@@ -1,0 +1,66 @@
+{
+  "name": "13_ConvTranspose3d_Mean_Add_Softmax_Tanh_Scaling",
+  "level": 2,
+  "type": "layer",
+  "file": "level_2_layer/conv_mean_softmax_tanh_scale.py",
+  "children": [
+    {
+      "name": "conv_mean_bias",
+      "level": 1,
+      "type": "fusion",
+      "file": "level_1_fusion/conv_mean_bias.py",
+      "children": [
+        {
+          "name": "conv_transpose3d",
+          "level": 0,
+          "type": "kernel",
+          "file": "level_0_kernel/conv_transpose3d.py",
+          "operation": "nn.ConvTranspose3d"
+        },
+        {
+          "name": "mean_pool",
+          "level": 0,
+          "type": "kernel",
+          "file": "level_0_kernel/mean_pool.py",
+          "operation": "mean"
+        },
+        {
+          "name": "bias_add",
+          "level": 0,
+          "type": "kernel",
+          "file": "level_0_kernel/bias_add.py",
+          "operation": "add"
+        }
+      ]
+    },
+    {
+      "name": "softmax_tanh_scale",
+      "level": 1,
+      "type": "fusion",
+      "file": "level_1_fusion/softmax_tanh_scale.py",
+      "children": [
+        {
+          "name": "softmax",
+          "level": 0,
+          "type": "kernel",
+          "file": "level_0_kernel/softmax.py",
+          "operation": "torch.softmax"
+        },
+        {
+          "name": "tanh",
+          "level": 0,
+          "type": "kernel",
+          "file": "level_0_kernel/tanh.py",
+          "operation": "torch.tanh"
+        },
+        {
+          "name": "scaling",
+          "level": 0,
+          "type": "kernel",
+          "file": "level_0_kernel/scaling.py",
+          "operation": "multiply"
+        }
+      ]
+    }
+  ]
+}

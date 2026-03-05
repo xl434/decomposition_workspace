@@ -1,0 +1,101 @@
+{
+  "timestamp": "2026-02-27T11:49:50.456168",
+  "decomp_dir": "output/level3/smolvla/",
+  "status": "PASS",
+  "total_steps": 15,
+  "passed": 15,
+  "failed": 0,
+  "skipped": 0,
+  "steps": [
+    {
+      "step_name": "step_10_pixel_shuffle_proj",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_11_rms_norm",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_12_gqa_attention",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_13_rope_embedding",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_14_sinusoidal_pos_emb",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_15_vision_layernorm",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_1_model_to_layers",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "PASS"
+    },
+    {
+      "step_name": "step_2_vision_encoder",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "PASS"
+    },
+    {
+      "step_name": "step_3_action_time_mlp",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "PASS"
+    },
+    {
+      "step_name": "step_4_vlm_expert_transformer",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "PASS"
+    },
+    {
+      "step_name": "step_5_silu_linear_mlp",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_6_vision_sdpa",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_7_vision_gelu_mlp",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_8_swiglu_mlp",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    },
+    {
+      "step_name": "step_9_vision_patch_embed",
+      "verification_status": "PASS",
+      "max_diff": 0.0,
+      "anticheat_status": "SKIPPED"
+    }
+  ]
+}

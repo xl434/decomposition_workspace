@@ -1,0 +1,43 @@
+{
+  "name": "11_ConvTranspose2d_BatchNorm_Tanh_MaxPool_GroupNorm",
+  "level": 1,
+  "type": "fusion",
+  "children": [
+    {
+      "name": "conv_transpose2d",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/conv_transpose2d.py",
+      "operation": "nn.ConvTranspose2d"
+    },
+    {
+      "name": "batch_norm2d",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/batch_norm2d.py",
+      "operation": "nn.BatchNorm2d"
+    },
+    {
+      "name": "tanh",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/tanh.py",
+      "operation": "torch.tanh"
+    },
+    {
+      "name": "max_pool2d",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/max_pool2d.py",
+      "operation": "nn.MaxPool2d"
+    },
+    {
+      "name": "group_norm",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/group_norm.py",
+      "operation": "nn.GroupNorm"
+    }
+  ],
+  "file": "level_1_fusion/conv_bn_tanh_pool_gnorm.py"
+}

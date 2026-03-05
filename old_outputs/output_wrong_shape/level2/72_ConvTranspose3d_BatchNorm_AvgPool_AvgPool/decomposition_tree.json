@@ -1,0 +1,36 @@
+{
+  "name": "72_ConvTranspose3d_BatchNorm_AvgPool_AvgPool",
+  "level": 1,
+  "type": "fusion",
+  "children": [
+    {
+      "name": "conv_transpose3d",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/conv_transpose3d.py",
+      "operation": "nn.ConvTranspose3d"
+    },
+    {
+      "name": "batch_norm3d",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/batch_norm3d.py",
+      "operation": "nn.BatchNorm3d"
+    },
+    {
+      "name": "avg_pool3d_1",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/avg_pool3d_1.py",
+      "operation": "nn.AvgPool3d"
+    },
+    {
+      "name": "avg_pool3d_2",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/avg_pool3d_2.py",
+      "operation": "nn.AvgPool3d"
+    }
+  ],
+  "file": "level_1_fusion/conv_bn_pool_pool.py"
+}

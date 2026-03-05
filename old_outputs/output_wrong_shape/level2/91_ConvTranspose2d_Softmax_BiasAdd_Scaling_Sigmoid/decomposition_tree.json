@@ -1,0 +1,43 @@
+{
+  "name": "91_ConvTranspose2d_Softmax_BiasAdd_Scaling_Sigmoid",
+  "level": 1,
+  "type": "fusion",
+  "children": [
+    {
+      "name": "conv_transpose2d",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/conv_transpose2d.py",
+      "operation": "nn.ConvTranspose2d"
+    },
+    {
+      "name": "softmax",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/softmax.py",
+      "operation": "torch.softmax"
+    },
+    {
+      "name": "bias_add",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/bias_add.py",
+      "operation": "add"
+    },
+    {
+      "name": "scaling",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/scaling.py",
+      "operation": "multiply"
+    },
+    {
+      "name": "sigmoid",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/sigmoid.py",
+      "operation": "torch.sigmoid"
+    }
+  ],
+  "file": "level_1_fusion/conv_softmax_bias_scale_sigmoid.py"
+}

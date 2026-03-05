@@ -1,0 +1,5 @@
+{
+  "patch_embedding.weight": "patch_conv.conv.weight",
+  "patch_embedding.bias": "patch_conv.conv.bias",
+  "position_embedding.weight": "position_emb.embedding.weight"
+}

@@ -1,0 +1,61 @@
+{
+    "model_name": "2_ShallowWideMLP",
+    "level": 1,
+    "description": "Shallow wide MLP with two hidden layers. Decomposes into 5 Level 0 kernels (3 Linear + 2 ReLU) fused at Level 1.",
+    "root": {
+        "id": "mlp_pipeline",
+        "type": "level_1_fusion",
+        "file": "level_1_fusion/mlp_pipeline.py",
+        "input_shapes": {
+            "x": [2, 16]
+        },
+        "output_shape": [2, 8],
+        "children": [
+            {
+                "id": "linear_0",
+                "type": "level_0_kernel",
+                "operation": "nn.Linear(16, 32)",
+                "file": "level_0_kernel/linear_0.py",
+                "input_shapes": {"x": [2, 16]},
+                "output_shape": [2, 32],
+                "children": []
+            },
+            {
+                "id": "relu_0",
+                "type": "level_0_kernel",
+                "operation": "nn.ReLU()",
+                "file": "level_0_kernel/relu_0.py",
+                "input_shapes": {"x": [2, 32]},
+                "output_shape": [2, 32],
+                "children": []
+            },
+            {
+                "id": "linear_1",
+                "type": "level_0_kernel",
+                "operation": "nn.Linear(32, 32)",
+                "file": "level_0_kernel/linear_1.py",
+                "input_shapes": {"x": [2, 32]},
+                "output_shape": [2, 32],
+                "children": []
+            },
+            {
+                "id": "relu_1",
+                "type": "level_0_kernel",
+                "operation": "nn.ReLU()",
+                "file": "level_0_kernel/relu_1.py",
+                "input_shapes": {"x": [2, 32]},
+                "output_shape": [2, 32],
+                "children": []
+            },
+            {
+                "id": "linear_2",
+                "type": "level_0_kernel",
+                "operation": "nn.Linear(32, 8)",
+                "file": "level_0_kernel/linear_2.py",
+                "input_shapes": {"x": [2, 32]},
+                "output_shape": [2, 8],
+                "children": []
+            }
+        ]
+    }
+}

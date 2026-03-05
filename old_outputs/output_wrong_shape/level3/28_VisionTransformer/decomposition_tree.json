@@ -1,0 +1,140 @@
+{
+  "model_name": "28_VisionTransformer",
+  "source_level": "level3",
+  "classification": "L3 Model",
+  "total_operations": 20,
+  "tree": {
+    "name": "VisionTransformer",
+    "level": 3,
+    "file": "level_3_model/vision_transformer.py",
+    "children": [
+      {
+        "name": "PatchEmbedding",
+        "level": 2,
+        "file": "level_2_layer/patch_embedding.py",
+        "children": [
+          {
+            "name": "PatchUnfoldEmbed",
+            "level": 1,
+            "file": "level_1_fusion/patch_unfold_embed.py",
+            "children": [
+              {
+                "name": "PatchUnfold",
+                "level": 0,
+                "file": "level_0_kernel/patch_unfold.py",
+                "operation": "unfold + reshape"
+              },
+              {
+                "name": "LinearEmbed",
+                "level": 0,
+                "file": "level_0_kernel/linear_embed.py",
+                "operation": "nn.Linear"
+              }
+            ]
+          },
+          {
+            "name": "ClsPosDropout",
+            "level": 1,
+            "file": "level_1_fusion/cls_pos_dropout.py",
+            "children": [
+              {
+                "name": "ClsTokenCat",
+                "level": 0,
+                "file": "level_0_kernel/cls_token_cat.py",
+                "operation": "torch.cat(cls_token, patches)"
+              },
+              {
+                "name": "PosEmbeddingAdd",
+                "level": 0,
+                "file": "level_0_kernel/pos_embedding_add.py",
+                "operation": "x + pos_embed"
+              },
+              {
+                "name": "Dropout",
+                "level": 0,
+                "file": "level_0_kernel/dropout.py",
+                "operation": "nn.Dropout"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "TransformerEncoder",
+        "level": 2,
+        "file": "level_2_layer/transformer_encoder.py",
+        "children": [
+          {
+            "name": "TransformerLayer",
+            "level": 1,
+            "file": "level_1_fusion/transformer_layer.py",
+            "children": [
+              {
+                "name": "LayerNorm",
+                "level": 0,
+                "file": "level_0_kernel/layer_norm.py",
+                "operation": "nn.LayerNorm"
+              },
+              {
+                "name": "MultiheadAttention",
+                "level": 0,
+                "file": "level_0_kernel/multihead_attention.py",
+                "operation": "nn.MultiheadAttention"
+              },
+              {
+                "name": "LinearFFNUp",
+                "level": 0,
+                "file": "level_0_kernel/linear_ffn_up.py",
+                "operation": "nn.Linear (hidden→4*hidden)"
+              },
+              {
+                "name": "GELU",
+                "level": 0,
+                "file": "level_0_kernel/gelu.py",
+                "operation": "F.gelu"
+              },
+              {
+                "name": "LinearFFNDown",
+                "level": 0,
+                "file": "level_0_kernel/linear_ffn_down.py",
+                "operation": "nn.Linear (4*hidden→hidden)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "ClassificationHead",
+        "level": 2,
+        "file": "level_2_layer/classification_head.py",
+        "children": [
+          {
+            "name": "ClsExtractMLP",
+            "level": 1,
+            "file": "level_1_fusion/cls_extract_mlp.py",
+            "children": [
+              {
+                "name": "ClsTokenExtract",
+                "level": 0,
+                "file": "level_0_kernel/cls_token_extract.py",
+                "operation": "x[:, 0]"
+              },
+              {
+                "name": "LinearHeadUp",
+                "level": 0,
+                "file": "level_0_kernel/linear_head_up.py",
+                "operation": "nn.Linear (hidden→hidden)"
+              },
+              {
+                "name": "LinearHeadDown",
+                "level": 0,
+                "file": "level_0_kernel/linear_head_down.py",
+                "operation": "nn.Linear (hidden→num_classes)"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

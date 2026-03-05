@@ -1,0 +1,6 @@
+{
+  "fc1.weight": "fc1.linear.weight",
+  "fc1.bias": "fc1.linear.bias",
+  "fc2.weight": "fc2.linear.weight",
+  "fc2.bias": "fc2.linear.bias"
+}

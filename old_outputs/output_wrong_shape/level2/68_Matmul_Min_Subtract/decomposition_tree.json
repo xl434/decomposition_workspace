@@ -1,0 +1,29 @@
+{
+  "name": "68_Matmul_Min_Subtract",
+  "level": 1,
+  "type": "fusion",
+  "children": [
+    {
+      "name": "linear",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/linear.py",
+      "operation": "nn.Linear"
+    },
+    {
+      "name": "min_clamp",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/min_clamp.py",
+      "operation": "torch.min"
+    },
+    {
+      "name": "subtract",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/subtract.py",
+      "operation": "subtract"
+    }
+  ],
+  "file": "level_1_fusion/linear_min_subtract.py"
+}

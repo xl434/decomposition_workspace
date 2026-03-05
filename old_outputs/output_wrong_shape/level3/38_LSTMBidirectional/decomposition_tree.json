@@ -1,0 +1,53 @@
+{
+    "model_name": "38_LSTMBidirectional",
+    "level": 1,
+    "description": "Bidirectional LSTM followed by last-timestep slicing and a fully connected layer. Decomposes into 3 Level 0 kernels fused at Level 1.",
+    "root": {
+        "id": "lstm_slice_fc",
+        "type": "level_1_fusion",
+        "file": "level_1_fusion/lstm_slice_fc.py",
+        "input_shapes": {
+            "x": [2, 4, 8],
+            "h0": [4, 2, 16],
+            "c0": [4, 2, 16]
+        },
+        "output_shape": [2, 4],
+        "children": [
+            {
+                "id": "lstm",
+                "type": "level_0_kernel",
+                "operation": "nn.LSTM(bidirectional=True)",
+                "file": "level_0_kernel/lstm.py",
+                "input_shapes": {
+                    "x": [2, 4, 8],
+                    "h0": [4, 2, 16],
+                    "c0": [4, 2, 16]
+                },
+                "output_shape": [2, 4, 32],
+                "children": []
+            },
+            {
+                "id": "slice_last",
+                "type": "level_0_kernel",
+                "operation": "tensor[:, -1, :]",
+                "file": "level_0_kernel/slice_last.py",
+                "input_shapes": {
+                    "x": [2, 4, 32]
+                },
+                "output_shape": [2, 32],
+                "children": []
+            },
+            {
+                "id": "linear",
+                "type": "level_0_kernel",
+                "operation": "nn.Linear(32, 4)",
+                "file": "level_0_kernel/linear.py",
+                "input_shapes": {
+                    "x": [2, 32]
+                },
+                "output_shape": [2, 4],
+                "children": []
+            }
+        ]
+    }
+}

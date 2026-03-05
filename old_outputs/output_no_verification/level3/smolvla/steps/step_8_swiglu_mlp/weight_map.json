@@ -1,0 +1,5 @@
+{
+  "gate_proj.weight": "gate_proj.linear.weight",
+  "up_proj.weight": "up_proj.linear.weight",
+  "down_proj.weight": "down_proj.linear.weight"
+}

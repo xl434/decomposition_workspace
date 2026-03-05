@@ -1,0 +1,36 @@
+{
+  "name": "45_Gemm_Sigmoid_LogSumExp",
+  "level": 1,
+  "type": "fusion",
+  "children": [
+    {
+      "name": "linear_1",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/linear_1.py",
+      "operation": "nn.Linear"
+    },
+    {
+      "name": "sigmoid",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/sigmoid.py",
+      "operation": "torch.sigmoid"
+    },
+    {
+      "name": "linear_2",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/linear_2.py",
+      "operation": "nn.Linear"
+    },
+    {
+      "name": "logsumexp",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/logsumexp.py",
+      "operation": "torch.logsumexp"
+    }
+  ],
+  "file": "level_1_fusion/gemm_sigmoid_logsumexp.py"
+}

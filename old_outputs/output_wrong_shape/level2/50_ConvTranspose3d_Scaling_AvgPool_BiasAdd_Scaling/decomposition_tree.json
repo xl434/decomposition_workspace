@@ -1,0 +1,43 @@
+{
+  "name": "50_ConvTranspose3d_Scaling_AvgPool_BiasAdd_Scaling",
+  "level": 1,
+  "type": "fusion",
+  "children": [
+    {
+      "name": "conv_transpose3d",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/conv_transpose3d.py",
+      "operation": "nn.ConvTranspose3d"
+    },
+    {
+      "name": "scale1",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/scale1.py",
+      "operation": "multiply by nn.Parameter scalar"
+    },
+    {
+      "name": "avg_pool3d",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/avg_pool3d.py",
+      "operation": "nn.AvgPool3d"
+    },
+    {
+      "name": "bias_add",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/bias_add.py",
+      "operation": "add nn.Parameter bias"
+    },
+    {
+      "name": "scale2",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/scale2.py",
+      "operation": "multiply by nn.Parameter scalar"
+    }
+  ],
+  "file": "level_1_fusion/conv_scale_pool_bias_scale.py"
+}

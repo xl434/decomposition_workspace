@@ -1,0 +1,241 @@
+{
+  "model_name": "gpt_oss",
+  "root": {
+    "name": "Transformer",
+    "level": 3,
+    "file": "level_3_model/gpt_oss.py",
+    "children": [
+      {
+        "name": "Embedding",
+        "level": 0,
+        "file": "level_0_kernel/embedding.py",
+        "operation": "nn.Embedding",
+        "children": []
+      },
+      {
+        "name": "TransformerBlock",
+        "level": 2,
+        "file": "level_2_layer/transformer_block.py",
+        "children": [
+          {
+            "name": "AttentionBlock",
+            "level": 2,
+            "file": "level_2_layer/attention_block.py",
+            "children": [
+              {
+                "name": "AttnNormQKV",
+                "level": 1,
+                "file": "level_1_fusion/attn_norm_qkv.py",
+                "children": [
+                  {
+                    "name": "RMSNorm",
+                    "level": 0,
+                    "file": "level_0_kernel/rms_norm.py",
+                    "operation": "rms_normalization",
+                    "children": []
+                  },
+                  {
+                    "name": "LinearQKV",
+                    "level": 0,
+                    "file": "level_0_kernel/linear_proj.py",
+                    "operation": "nn.Linear",
+                    "children": []
+                  },
+                  {
+                    "name": "SplitQKV",
+                    "level": 0,
+                    "file": "level_0_kernel/split_qkv.py",
+                    "operation": "tensor_slice",
+                    "children": []
+                  },
+                  {
+                    "name": "GQAReshape",
+                    "level": 0,
+                    "file": "level_0_kernel/gqa_reshape.py",
+                    "operation": "tensor_reshape",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "name": "RoPEApplication",
+                "level": 1,
+                "file": "level_1_fusion/rope_apply.py",
+                "children": [
+                  {
+                    "name": "RoPEFrequency",
+                    "level": 0,
+                    "file": "level_0_kernel/rope_frequency.py",
+                    "operation": "rotary_frequency_computation",
+                    "children": []
+                  },
+                  {
+                    "name": "ApplyRotary",
+                    "level": 0,
+                    "file": "level_0_kernel/apply_rotary.py",
+                    "operation": "rotary_embedding_application",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "name": "SDPACore",
+                "level": 1,
+                "file": "level_1_fusion/sdpa_core.py",
+                "children": [
+                  {
+                    "name": "AttentionMask",
+                    "level": 0,
+                    "file": "level_0_kernel/attention_mask.py",
+                    "operation": "causal_sliding_mask",
+                    "children": []
+                  },
+                  {
+                    "name": "EinsumAttnScores",
+                    "level": 0,
+                    "file": "level_0_kernel/einsum_attn_scores.py",
+                    "operation": "einsum_qk_scores",
+                    "children": []
+                  },
+                  {
+                    "name": "SoftmaxAttn",
+                    "level": 0,
+                    "file": "level_0_kernel/softmax_attn.py",
+                    "operation": "softmax_with_sinks",
+                    "children": []
+                  },
+                  {
+                    "name": "AttnWeightedValues",
+                    "level": 0,
+                    "file": "level_0_kernel/attention_weighted_values.py",
+                    "operation": "einsum_weighted_values",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "name": "AttnOutputResidual",
+                "level": 1,
+                "file": "level_1_fusion/attn_output_residual.py",
+                "children": [
+                  {
+                    "name": "LinearOut",
+                    "level": 0,
+                    "file": "level_0_kernel/linear_proj.py",
+                    "operation": "nn.Linear",
+                    "children": []
+                  },
+                  {
+                    "name": "ResidualAdd",
+                    "level": 0,
+                    "file": "level_0_kernel/residual_add.py",
+                    "operation": "element_wise_add",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "MLPBlock",
+            "level": 2,
+            "file": "level_2_layer/mlp_block.py",
+            "children": [
+              {
+                "name": "MLPGating",
+                "level": 1,
+                "file": "level_1_fusion/mlp_gating.py",
+                "children": [
+                  {
+                    "name": "RMSNorm",
+                    "level": 0,
+                    "file": "level_0_kernel/rms_norm.py",
+                    "operation": "rms_normalization",
+                    "children": []
+                  },
+                  {
+                    "name": "GateLinear",
+                    "level": 0,
+                    "file": "level_0_kernel/linear_proj.py",
+                    "operation": "nn.Linear",
+                    "children": []
+                  },
+                  {
+                    "name": "TopKGate",
+                    "level": 0,
+                    "file": "level_0_kernel/topk_gate.py",
+                    "operation": "topk_softmax_gating",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "name": "ExpertUpActivate",
+                "level": 1,
+                "file": "level_1_fusion/expert_up_activate.py",
+                "children": [
+                  {
+                    "name": "ExpertEinsum",
+                    "level": 0,
+                    "file": "level_0_kernel/expert_einsum.py",
+                    "operation": "expert_mlp_einsum",
+                    "children": []
+                  },
+                  {
+                    "name": "SwiGLU",
+                    "level": 0,
+                    "file": "level_0_kernel/swiglu.py",
+                    "operation": "swiglu_activation",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "name": "ExpertDownCombine",
+                "level": 1,
+                "file": "level_1_fusion/expert_down_combine.py",
+                "children": [
+                  {
+                    "name": "ExpertEinsum",
+                    "level": 0,
+                    "file": "level_0_kernel/expert_einsum.py",
+                    "operation": "expert_mlp_einsum",
+                    "children": []
+                  },
+                  {
+                    "name": "ExpertWeightedCombine",
+                    "level": 0,
+                    "file": "level_0_kernel/expert_weighted_combine.py",
+                    "operation": "weighted_expert_sum",
+                    "children": []
+                  },
+                  {
+                    "name": "ResidualAdd",
+                    "level": 0,
+                    "file": "level_0_kernel/residual_add.py",
+                    "operation": "element_wise_add",
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "FinalRMSNorm",
+        "level": 0,
+        "file": "level_0_kernel/rms_norm.py",
+        "operation": "rms_normalization",
+        "children": []
+      },
+      {
+        "name": "Unembedding",
+        "level": 0,
+        "file": "level_0_kernel/linear_proj.py",
+        "operation": "nn.Linear",
+        "children": []
+      }
+    ]
+  }
+}

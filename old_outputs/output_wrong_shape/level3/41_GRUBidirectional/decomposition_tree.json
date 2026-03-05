@@ -1,0 +1,25 @@
+{
+    "model_name": "41_GRUBidirectional",
+    "level": 0,
+    "description": "Single bidirectional GRU operation. No decomposition needed -- the model IS a Level 0 kernel.",
+    "root": {
+        "id": "gru_bidirectional",
+        "type": "level_0_kernel",
+        "operation": "nn.GRU(bidirectional=True)",
+        "file": "level_0_kernel/gru_bidirectional.py",
+        "input_shapes": {
+            "x": [4, 2, 8],
+            "h0": [4, 2, 16]
+        },
+        "output_shape": [4, 2, 32],
+        "parameters": {
+            "input_size": 8,
+            "hidden_size": 16,
+            "num_layers": 2,
+            "bias": true,
+            "batch_first": false,
+            "bidirectional": true
+        },
+        "children": []
+    }
+}

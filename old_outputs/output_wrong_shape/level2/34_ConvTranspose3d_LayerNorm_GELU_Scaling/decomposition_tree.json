@@ -1,0 +1,36 @@
+{
+  "name": "34_ConvTranspose3d_LayerNorm_GELU_Scaling",
+  "level": 1,
+  "type": "fusion",
+  "children": [
+    {
+      "name": "conv_transpose3d",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/conv_transpose3d.py",
+      "operation": "nn.ConvTranspose3d"
+    },
+    {
+      "name": "layer_norm",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/layer_norm.py",
+      "operation": "nn.LayerNorm"
+    },
+    {
+      "name": "gelu",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/gelu.py",
+      "operation": "F.gelu"
+    },
+    {
+      "name": "scaling",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/scaling.py",
+      "operation": "multiply"
+    }
+  ],
+  "file": "level_1_fusion/conv_norm_gelu_scale.py"
+}

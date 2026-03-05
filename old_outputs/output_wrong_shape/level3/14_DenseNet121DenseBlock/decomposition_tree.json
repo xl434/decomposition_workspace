@@ -1,0 +1,69 @@
+{
+  "name": "14_DenseNet121DenseBlock",
+  "level": 3,
+  "type": "model",
+  "file": "level_3_model/dense_block.py",
+  "children": [
+    {
+      "name": "dense_layer_0",
+      "level": 2,
+      "type": "layer",
+      "file": "level_2_layer/dense_layer_0.py",
+      "children": [
+        {
+          "name": "bn_relu_conv_0",
+          "level": 1,
+          "type": "fusion",
+          "file": "level_1_fusion/bn_relu_conv_0.py",
+          "children": [
+            {"name": "batch_norm2d_4", "level": 0, "type": "kernel", "file": "level_0_kernel/batch_norm2d_4.py"},
+            {"name": "relu", "level": 0, "type": "kernel", "file": "level_0_kernel/relu.py"},
+            {"name": "conv2d_4_4", "level": 0, "type": "kernel", "file": "level_0_kernel/conv2d_4_4.py"}
+          ]
+        },
+        {"name": "dropout", "level": 0, "type": "kernel", "file": "level_0_kernel/dropout.py"}
+      ]
+    },
+    {
+      "name": "dense_layer_1",
+      "level": 2,
+      "type": "layer",
+      "file": "level_2_layer/dense_layer_1.py",
+      "children": [
+        {
+          "name": "bn_relu_conv_1",
+          "level": 1,
+          "type": "fusion",
+          "file": "level_1_fusion/bn_relu_conv_1.py",
+          "children": [
+            {"name": "batch_norm2d_8", "level": 0, "type": "kernel", "file": "level_0_kernel/batch_norm2d_8.py"},
+            {"name": "relu", "level": 0, "type": "kernel", "file": "level_0_kernel/relu.py"},
+            {"name": "conv2d_8_4", "level": 0, "type": "kernel", "file": "level_0_kernel/conv2d_8_4.py"}
+          ]
+        },
+        {"name": "dropout", "level": 0, "type": "kernel", "file": "level_0_kernel/dropout.py"}
+      ]
+    },
+    {
+      "name": "dense_layer_2",
+      "level": 2,
+      "type": "layer",
+      "file": "level_2_layer/dense_layer_2.py",
+      "children": [
+        {
+          "name": "bn_relu_conv_2",
+          "level": 1,
+          "type": "fusion",
+          "file": "level_1_fusion/bn_relu_conv_2.py",
+          "children": [
+            {"name": "batch_norm2d_12", "level": 0, "type": "kernel", "file": "level_0_kernel/batch_norm2d_12.py"},
+            {"name": "relu", "level": 0, "type": "kernel", "file": "level_0_kernel/relu.py"},
+            {"name": "conv2d_12_4", "level": 0, "type": "kernel", "file": "level_0_kernel/conv2d_12_4.py"}
+          ]
+        },
+        {"name": "dropout", "level": 0, "type": "kernel", "file": "level_0_kernel/dropout.py"}
+      ]
+    },
+    {"name": "cat", "level": 0, "type": "kernel", "file": "level_0_kernel/cat.py"}
+  ]
+}

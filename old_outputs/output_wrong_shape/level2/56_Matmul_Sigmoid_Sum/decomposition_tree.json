@@ -1,0 +1,29 @@
+{
+  "name": "56_Matmul_Sigmoid_Sum",
+  "level": 1,
+  "type": "fusion",
+  "children": [
+    {
+      "name": "linear",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/linear.py",
+      "operation": "nn.Linear"
+    },
+    {
+      "name": "sigmoid",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/sigmoid.py",
+      "operation": "torch.sigmoid"
+    },
+    {
+      "name": "sum",
+      "level": 0,
+      "type": "kernel",
+      "file": "level_0_kernel/sum.py",
+      "operation": "torch.sum(dim=1, keepdim=True)"
+    }
+  ],
+  "file": "level_1_fusion/linear_sigmoid_sum.py"
+}

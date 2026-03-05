@@ -1,0 +1,212 @@
+{
+  "model_name": "4_LeNet5",
+  "source": "KernelBench Level 3",
+  "classification": "Level 2 (Layer)",
+  "total_operations": 12,
+  "decomposition": "L2 -> L1 Fusions -> L0 Kernels",
+  "test_dimensions": {
+    "batch_size": 2,
+    "num_classes": 10,
+    "input_shape": [2, 1, 32, 32],
+    "output_shape": [2, 10]
+  },
+  "level_2_layer": {
+    "name": "lenet5",
+    "file": "level_2_layer/lenet5.py",
+    "description": "Full LeNet-5 model",
+    "input_shape": [2, 1, 32, 32],
+    "output_shape": [2, 10],
+    "children": [
+      "conv_relu_pool_1",
+      "conv_relu_pool_2",
+      "flatten_fc_relu_1",
+      "fc_relu_2",
+      "fc_output"
+    ]
+  },
+  "level_1_fusions": [
+    {
+      "name": "conv_relu_pool_1",
+      "file": "level_1_fusion/conv_relu_pool_1.py",
+      "description": "Conv2d(1,6,5) + ReLU + MaxPool2d(2,2)",
+      "input_shape": [2, 1, 32, 32],
+      "output_shape": [2, 6, 14, 14],
+      "num_ops": 3,
+      "children": ["conv2d_1", "relu_1", "max_pool2d_1"]
+    },
+    {
+      "name": "conv_relu_pool_2",
+      "file": "level_1_fusion/conv_relu_pool_2.py",
+      "description": "Conv2d(6,16,5) + ReLU + MaxPool2d(2,2)",
+      "input_shape": [2, 6, 14, 14],
+      "output_shape": [2, 16, 5, 5],
+      "num_ops": 3,
+      "children": ["conv2d_2", "relu_2", "max_pool2d_2"]
+    },
+    {
+      "name": "flatten_fc_relu_1",
+      "file": "level_1_fusion/flatten_fc_relu_1.py",
+      "description": "Flatten + Linear(400,120) + ReLU",
+      "input_shape": [2, 16, 5, 5],
+      "output_shape": [2, 120],
+      "num_ops": 3,
+      "children": ["flatten", "linear_1", "relu_3"]
+    },
+    {
+      "name": "fc_relu_2",
+      "file": "level_1_fusion/fc_relu_2.py",
+      "description": "Linear(120,84) + ReLU",
+      "input_shape": [2, 120],
+      "output_shape": [2, 84],
+      "num_ops": 2,
+      "children": ["linear_2", "relu_4"]
+    },
+    {
+      "name": "fc_output",
+      "file": "level_1_fusion/fc_output.py",
+      "description": "Linear(84,10) - single operation",
+      "input_shape": [2, 84],
+      "output_shape": [2, 10],
+      "num_ops": 1,
+      "children": ["linear_3"]
+    }
+  ],
+  "level_0_kernels": [
+    {
+      "name": "conv2d_1",
+      "file": "level_0_kernel/conv2d_1.py",
+      "operation": "Conv2d(1, 6, 5, stride=1)",
+      "input_shape": [2, 1, 32, 32],
+      "output_shape": [2, 6, 28, 28],
+      "has_parameters": true,
+      "parameter_count": 156
+    },
+    {
+      "name": "relu_1",
+      "file": "level_0_kernel/relu_1.py",
+      "operation": "ReLU",
+      "input_shape": [2, 6, 28, 28],
+      "output_shape": [2, 6, 28, 28],
+      "has_parameters": false,
+      "parameter_count": 0
+    },
+    {
+      "name": "max_pool2d_1",
+      "file": "level_0_kernel/max_pool2d_1.py",
+      "operation": "MaxPool2d(2, 2)",
+      "input_shape": [2, 6, 28, 28],
+      "output_shape": [2, 6, 14, 14],
+      "has_parameters": false,
+      "parameter_count": 0
+    },
+    {
+      "name": "conv2d_2",
+      "file": "level_0_kernel/conv2d_2.py",
+      "operation": "Conv2d(6, 16, 5, stride=1)",
+      "input_shape": [2, 6, 14, 14],
+      "output_shape": [2, 16, 10, 10],
+      "has_parameters": true,
+      "parameter_count": 2416
+    },
+    {
+      "name": "relu_2",
+      "file": "level_0_kernel/relu_2.py",
+      "operation": "ReLU",
+      "input_shape": [2, 16, 10, 10],
+      "output_shape": [2, 16, 10, 10],
+      "has_parameters": false,
+      "parameter_count": 0
+    },
+    {
+      "name": "max_pool2d_2",
+      "file": "level_0_kernel/max_pool2d_2.py",
+      "operation": "MaxPool2d(2, 2)",
+      "input_shape": [2, 16, 10, 10],
+      "output_shape": [2, 16, 5, 5],
+      "has_parameters": false,
+      "parameter_count": 0
+    },
+    {
+      "name": "flatten",
+      "file": "level_0_kernel/flatten.py",
+      "operation": "View/Reshape",
+      "input_shape": [2, 16, 5, 5],
+      "output_shape": [2, 400],
+      "has_parameters": false,
+      "parameter_count": 0
+    },
+    {
+      "name": "linear_1",
+      "file": "level_0_kernel/linear_1.py",
+      "operation": "Linear(400, 120)",
+      "input_shape": [2, 400],
+      "output_shape": [2, 120],
+      "has_parameters": true,
+      "parameter_count": 48120
+    },
+    {
+      "name": "relu_3",
+      "file": "level_0_kernel/relu_3.py",
+      "operation": "ReLU",
+      "input_shape": [2, 120],
+      "output_shape": [2, 120],
+      "has_parameters": false,
+      "parameter_count": 0
+    },
+    {
+      "name": "linear_2",
+      "file": "level_0_kernel/linear_2.py",
+      "operation": "Linear(120, 84)",
+      "input_shape": [2, 120],
+      "output_shape": [2, 84],
+      "has_parameters": true,
+      "parameter_count": 10164
+    },
+    {
+      "name": "relu_4",
+      "file": "level_0_kernel/relu_4.py",
+      "operation": "ReLU",
+      "input_shape": [2, 84],
+      "output_shape": [2, 84],
+      "has_parameters": false,
+      "parameter_count": 0
+    },
+    {
+      "name": "linear_3",
+      "file": "level_0_kernel/linear_3.py",
+      "operation": "Linear(84, 10)",
+      "input_shape": [2, 84],
+      "output_shape": [2, 10],
+      "has_parameters": true,
+      "parameter_count": 850
+    }
+  ],
+  "data_flow": [
+    {"from": "input", "to": "conv2d_1", "shape": [2, 1, 32, 32]},
+    {"from": "conv2d_1", "to": "relu_1", "shape": [2, 6, 28, 28]},
+    {"from": "relu_1", "to": "max_pool2d_1", "shape": [2, 6, 28, 28]},
+    {"from": "max_pool2d_1", "to": "conv2d_2", "shape": [2, 6, 14, 14]},
+    {"from": "conv2d_2", "to": "relu_2", "shape": [2, 16, 10, 10]},
+    {"from": "relu_2", "to": "max_pool2d_2", "shape": [2, 16, 10, 10]},
+    {"from": "max_pool2d_2", "to": "flatten", "shape": [2, 16, 5, 5]},
+    {"from": "flatten", "to": "linear_1", "shape": [2, 400]},
+    {"from": "linear_1", "to": "relu_3", "shape": [2, 120]},
+    {"from": "relu_3", "to": "linear_2", "shape": [2, 120]},
+    {"from": "linear_2", "to": "relu_4", "shape": [2, 84]},
+    {"from": "relu_4", "to": "linear_3", "shape": [2, 84]},
+    {"from": "linear_3", "to": "output", "shape": [2, 10]}
+  ],
+  "total_parameters": 61706,
+  "parameter_breakdown": {
+    "conv1_weight": "6x1x5x5 = 150",
+    "conv1_bias": "6",
+    "conv2_weight": "16x6x5x5 = 2400",
+    "conv2_bias": "16",
+    "fc1_weight": "120x400 = 48000",
+    "fc1_bias": "120",
+    "fc2_weight": "84x120 = 10080",
+    "fc2_bias": "84",
+    "fc3_weight": "10x84 = 840",
+    "fc3_bias": "10"
+  }
+}

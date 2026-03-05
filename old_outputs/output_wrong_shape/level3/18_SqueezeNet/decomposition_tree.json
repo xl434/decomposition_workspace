@@ -1,0 +1,184 @@
+{
+  "metadata": {
+    "source_file": "C:\\Users\\liang\\KernelAgent\\decomposition_workspace\\data\\kernelbench\\level3\\18_SqueezeNet.py",
+    "source_level": "level3",
+    "model_name": "18_SqueezeNet",
+    "timestamp": "2026-02-11T00:00:00Z",
+    "total_components": 18,
+    "by_level": {
+      "model": 1,
+      "layer": 2,
+      "fusion": 2,
+      "kernel": 7
+    },
+    "verification_status": "PENDING"
+  },
+  "nodes": {
+    "root": {
+      "id": "root",
+      "name": "SqueezeNet",
+      "level": "model",
+      "path": "level_3_model/squeezenet.py",
+      "children": ["features", "classifier", "flatten"],
+      "input_shapes": {"x": [2, 3, 32, 32]},
+      "output_shapes": {"output": [2, 10]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "features": {
+      "id": "features",
+      "name": "Features",
+      "level": "layer",
+      "path": "level_2_layer/features.py",
+      "parent": "root",
+      "children": ["initial_conv_block", "fire_module_0", "fire_module_1", "fire_module_2", "maxpool_0", "fire_module_3", "fire_module_4", "fire_module_5", "fire_module_6", "maxpool_1", "fire_module_7", "maxpool_2"],
+      "input_shapes": {"x": [2, 3, 32, 32]},
+      "output_shapes": {"output": [2, 512, 1, 1]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "classifier": {
+      "id": "classifier",
+      "name": "Classifier",
+      "level": "layer",
+      "path": "level_2_layer/classifier.py",
+      "parent": "root",
+      "children": ["dropout", "conv2d_classifier", "relu_classifier", "adaptive_avg_pool2d"],
+      "input_shapes": {"x": [2, 512, 1, 1]},
+      "output_shapes": {"output": [2, 10, 1, 1]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "flatten": {
+      "id": "flatten",
+      "name": "Flatten",
+      "level": "kernel",
+      "path": "level_0_kernel/flatten.py",
+      "parent": "root",
+      "children": [],
+      "input_shapes": {"x": [2, 10, 1, 1]},
+      "output_shapes": {"output": [2, 10]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "initial_conv_block": {
+      "id": "initial_conv_block",
+      "name": "Initial Conv Block",
+      "level": "fusion",
+      "path": "level_1_fusion/initial_conv_block.py",
+      "parent": "features",
+      "children": ["conv2d_initial", "relu_initial", "maxpool_initial"],
+      "input_shapes": {"x": [2, 3, 32, 32]},
+      "output_shapes": {"output": [2, 96, 6, 6]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "fire_module": {
+      "id": "fire_module",
+      "name": "Fire Module",
+      "level": "fusion",
+      "path": "level_1_fusion/fire_module.py",
+      "parent": "features",
+      "children": ["conv2d_squeeze", "relu_squeeze", "conv2d_expand1x1", "relu_expand1x1", "conv2d_expand3x3", "relu_expand3x3", "cat_channels"],
+      "input_shapes": {"x": [2, 96, 6, 6]},
+      "output_shapes": {"output": [2, 128, 6, 6]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "conv2d": {
+      "id": "conv2d",
+      "name": "Conv2d",
+      "level": "kernel",
+      "path": "level_0_kernel/conv2d.py",
+      "parent": "initial_conv_block, fire_module, classifier",
+      "children": [],
+      "input_shapes": {"x": [2, 3, 32, 32]},
+      "output_shapes": {"output": [2, 96, 13, 13]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "relu": {
+      "id": "relu",
+      "name": "ReLU",
+      "level": "kernel",
+      "path": "level_0_kernel/relu.py",
+      "parent": "initial_conv_block, fire_module, classifier",
+      "children": [],
+      "input_shapes": {"x": [2, 96, 13, 13]},
+      "output_shapes": {"output": [2, 96, 13, 13]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "max_pool2d": {
+      "id": "max_pool2d",
+      "name": "MaxPool2d",
+      "level": "kernel",
+      "path": "level_0_kernel/max_pool2d.py",
+      "parent": "initial_conv_block, features",
+      "children": [],
+      "input_shapes": {"x": [2, 96, 13, 13]},
+      "output_shapes": {"output": [2, 96, 6, 6]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "adaptive_avg_pool2d": {
+      "id": "adaptive_avg_pool2d",
+      "name": "AdaptiveAvgPool2d",
+      "level": "kernel",
+      "path": "level_0_kernel/adaptive_avg_pool2d.py",
+      "parent": "classifier",
+      "children": [],
+      "input_shapes": {"x": [2, 10, 2, 2]},
+      "output_shapes": {"output": [2, 10, 1, 1]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "cat_channels": {
+      "id": "cat_channels",
+      "name": "Cat Channels",
+      "level": "kernel",
+      "path": "level_0_kernel/cat_channels.py",
+      "parent": "fire_module",
+      "children": [],
+      "input_shapes": {"x1": [2, 64, 6, 6], "x2": [2, 64, 6, 6]},
+      "output_shapes": {"output": [2, 128, 6, 6]},
+      "input_dtypes": {"x1": "float32", "x2": "float32"},
+      "output_dtypes": {"output": "float32"}
+    },
+    "dropout": {
+      "id": "dropout",
+      "name": "Dropout",
+      "level": "kernel",
+      "path": "level_0_kernel/dropout.py",
+      "parent": "classifier",
+      "children": [],
+      "input_shapes": {"x": [2, 512, 1, 1]},
+      "output_shapes": {"output": [2, 512, 2, 2]},
+      "input_dtypes": {"x": "float32"},
+      "output_dtypes": {"output": "float32"}
+    }
+  },
+  "data_flow": [
+    {
+      "from": "root",
+      "to": "features",
+      "tensor_name": "x",
+      "shape": [2, 3, 32, 32],
+      "dtype": "float32"
+    },
+    {
+      "from": "features",
+      "to": "classifier",
+      "tensor_name": "x",
+      "shape": [2, 512, 1, 1],
+      "dtype": "float32"
+    },
+    {
+      "from": "classifier",
+      "to": "flatten",
+      "tensor_name": "x",
+      "shape": [2, 10, 1, 1],
+      "dtype": "float32"
+    }
+  ]
+}
